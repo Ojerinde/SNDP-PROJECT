@@ -2,7 +2,7 @@
 
 ## NEW (Updated May 2026)
 
-### 📊 MGEX Status Files - Understanding Station Data Quality
+### MGEX Status Files - Understanding Station Data Quality
 
 Two status files provide complete information about every IGS/MGEX station:
 
