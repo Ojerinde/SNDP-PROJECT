@@ -1,0 +1,4 @@
+version 2
+  MJD      Xpole   Ypole  UT1-UTC    LOD  Xsig  Ysig   UTsig  LODsig  Nr  Nf  Nt    Xrt    Yrt  Xrtsig  Yrtsig
+             (10**-6")       (0.1 usec)    (10**-6")     (0.1 usec)                (10**-6"/d)    (10**-6"/d)
+61055.50   97908  341428   723485  -5215    11    12       1      54 108   0  31  -1269    383     44     44

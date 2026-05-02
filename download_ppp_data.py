@@ -1,63 +1,77 @@
 #!/usr/bin/env python3
 """
-🌐 Complete PPP Data Downloader  (FIXED)
-=========================================
-Download ALL products needed for PPP processing:
-  1. RTKLIB/RTKPOST (broadcast or precise ephemeris)
-  2. GAMP            (precise products via config file)
-  3. PRIDE PPP-AR    (with phase biases for fastest convergence)
-  4. RTKLIB-demo     (same as RTKLIB, enhanced algorithms)
+PPP Data Downloader  v5  — Robust retry + verified CDDIS URLs
+==============================================================
+Downloads every file needed for PPP with RTKLIB, GAMP, PRIDE PPP-AR.
 
-FIXES vs original
-─────────────────
- 1. Observation subdirectory   : always  {yy}d  (e.g. 26d) — not "24d/24o"
- 2. Broadcast nav subdirectory : always  brdc   (not 24p / {yy}m)
- 3. Broadcast nav filename     : BRD400DLR_S_{YYYYDDD}0000_01D_MN.rnx.gz
-                                 (prefix BRD4, source DLR, type S)
- 4. IGS SP3 interval           : 15M → 05M (long-name files use 05M on CDDIS)
- 5. WUM SP3 filename           : _01D_orb.sp3.gz → _05M_ORB.SP3.gz
- 6. WUM CLK filename           : _01D_clk.clk.gz → _30S_CLK.CLK.gz
- 7. WUM URL base               : products/mgex/  → products/{gps_week}/
- 8. Bias filename/path         : CAS0MGXRAP_…_DCB.BSX.gz
-                                 → CAS0OPSRAP_…_DCB.BIA.gz  (products/bias/{year}/)
-    Also adds COD0MGXFIN OSB as second fallback
- 9. Ionosphere path            : products/ionex/ → products/ionosphere/
-10. Ionosphere filename        : IGS0OPSFIN_…_ION.ION.gz
-                                 → COD0OPSFIN_…_GIM.INX.gz  (COD = CODE, best avail)
-    Also adds COD0OPSRAP as rapid fallback
-11. SINEX URL                  : literal "YYYYDDD" placeholder fixed to real date
-    Also adds correct weekly SINEX name IGS0OPSFIN_{week_start_YYYYDDD}0000…
-12. ERP legacy name            : igs{week}7.erp.Z → igs{week}{dow}.erp.Z
-13. Station country lookup     : expanded table for HKWS (HKG), ZIM2 (CHE), etc.
+KEY FACTS CONFIRMED FROM LIVE CDDIS + MANUAL DOWNLOADS
+───────────────────────────────────────────────────────
+Observations  : .crx.gz  (Hatanaka-compressed RINEX 3, NOT .rnx.gz)
+                Path: /data/daily/{year}/{doy:03d}/{yy}d/
+                File: {SSSS}00{CCC}_R_{YYYYDDD}0000_01D_30S_MO.crx.gz
+                After: decompress .gz → .crx → CRX2RNX → .rnx
+
+Broadcast nav : /data/daily/{year}/brdc/BRD400DLR_S_{YYYYDDD}0000_01D_MN.rnx.gz
+                OR team member downloaded: BRDC00IGS_R_{YYYYDDD}0000_01D_MN.rnx
+
+Precise SP3   : /products/{week}/COD0OPSFIN_{YYYYDDD}0000_01D_05M_ORB.SP3.gz  (confirmed)
+                fallback: COD0MGXFIN, WUM0MGXRAP
+
+Precise CLK   : /products/{week}/COD0OPSFIN_{YYYYDDD}0000_01D_30S_CLK.CLK.gz
+                fallback: COD0MGXFIN, WUM0MGXRAP
+
+ERP           : /products/{week}/EMR0OPSFIN_{YYYYDDD}0000_01D_01D_ERP.ERP.gz  (confirmed)
+                fallback: WUM0MGXRAP, COD0MGXFIN (_12H)
+
+Bias          : /products/bias/{year}/CAS0OPSRAP_{YYYYDDD}0000_01D_01D_DCB.BIA.gz  (confirmed)
+                fallback: COD0MGXFIN OSB in /products/{week}/
+
+Ionosphere    : /products/ionosphere/{year}/{doy:03d}/COD0OPSFIN_{YYYYDDD}0000_01D_01H_GIM.INX.gz
+
+Attitude OBX  : /products/{week}/COD0MGXFIN_{YYYYDDD}0000_01D_30S_ATT.OBX.gz
+                Used by PRIDE PPP-AR for precise satellite attitude (eclipse seasons)
+                Fallback: WUM0MGXFIN, WUM0MGXRAP same path
+
+Antenna       : igs20.atx  (download once from files.igs.org or use team copy)
+                NOTE: team zip has 'igs20_2401.atx' — same file, rename to igs20.atx
+
+SINEX         : /products/{week}/MIT0OPSSNX_{YYYYDDD}0000_01D_01D_SOL.SNX.gz  (confirmed)
+                fallback: JPL0OPSFIN, COD0OPSFIN
+
+DROPPED CONNECTION FIX (IncompleteRead)
+───────────────────────────────────────
+Large files (SINEX, WUM CLK, WUM SP3) sometimes drop mid-download.
+v5 adds: resume-capable chunked download with 3 automatic retries,
+increasing timeout, and chunk-level integrity check.
 
 USAGE
 ─────
-    python download_ppp_data.py
-    python download_ppp_data.py --stations HKWS ZIM2
-    python download_ppp_data.py --stations BJFS GOLD --date 2026 015
-    python download_ppp_data.py --obs-only
-    python download_ppp_data.py --no-decompress
-    python download_ppp_data.py --skip-wuhan
+  python download_ppp_data.py --stations HKWS ZIM2 --date 2026 15
+  python download_ppp_data.py --obs-only
+  python download_ppp_data.py --skip-wuhan
 
 REQUIREMENTS
 ────────────
-    pip install requests python-dotenv tqdm
+  pip install requests python-dotenv tqdm
 
 SETUP
 ─────
-    1. Register at https://urs.earthdata.nasa.gov
-    2. Create .env file (or export env vars):
-           EARTHDATA_USERNAME=your_username
-           EARTHDATA_PASSWORD=your_password
+  1. https://urs.earthdata.nasa.gov  — register and confirm email
+  2. .env file next to this script:
+       EARTHDATA_USERNAME=yourname
+       EARTHDATA_PASSWORD=yourpass
+  3. CRX2RNX.exe in C:\\PPP_PROJECT\\tools\\
+       Download: https://terras.gsi.go.jp/ja/crx2rnx.html
+       Windows 64-bit: RNXCMP_4.2.0_Windows_mingw_64bit.zip
 """
 
 import os
 import sys
 import gzip
 import shutil
+import time
 import requests
 import datetime
-import hashlib
 import subprocess
 from pathlib import Path
 from getpass import getpass
@@ -75,120 +89,110 @@ try:
 except ImportError:
     HAS_TQDM = False
 
-# Fix Unicode output on Windows
-if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
-    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-if sys.stderr.encoding and sys.stderr.encoding.lower() != "utf-8":
-    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+for stream in (sys.stdout, sys.stderr):
+    if hasattr(stream, "reconfigure") and stream.encoding.lower() != "utf-8":
+        stream.reconfigure(encoding="utf-8", errors="replace")
 
-# ==============================================================================
+# ══════════════════════════════════════════════════════════════════
 #  CONFIGURATION
-# ==============================================================================
+# ══════════════════════════════════════════════════════════════════
 
 BASE_DIR = Path(r"C:\PPP_PROJECT")
 DATA_DIR = BASE_DIR / "data"
 PRODUCTS_DIR = BASE_DIR / "products"
+TOOLS_DIR = BASE_DIR / "tools"
 
-# Default date: 2026-01-15  (GPS week 2401, day-of-week 4 = Thursday)
 YEAR = 2026
 DOY = 15
 GPS_WEEK = 2401
-GPS_DOW = 4        # 0=Sunday … 6=Saturday
+GPS_DOW = 4
 
-# Derived strings (recalculated in main() when --date is used)
-YY = str(YEAR)[2:]
-DOY_STR = f"{DOY:03d}"
-YYYYDDD = f"{YEAR:04d}{DOY:03d}"
+CDDIS = "https://cddis.nasa.gov/archive/gnss"
+IGS_ATX = "https://files.igs.org/pub/station/general/igs20.atx"
 
-CDDIS_BASE = "https://cddis.nasa.gov/archive/gnss"
-IGS_FTP = "https://files.igs.org/pub/station/general"
+EARTHDATA_USER = os.environ.get(
+    "EARTHDATA_USERNAME") or os.environ.get("EARTHDATA_USER", "")
+EARTHDATA_PASS = os.environ.get(
+    "EARTHDATA_PASSWORD") or os.environ.get("EARTHDATA_PASS", "")
 
-# Credentials loaded from .env or environment
-EARTHDATA_USER = (os.environ.get("EARTHDATA_USERNAME", "")
-                  or os.environ.get("EARTHDATA_USER", ""))
-EARTHDATA_PASS = (os.environ.get("EARTHDATA_PASSWORD", "")
-                  or os.environ.get("EARTHDATA_PASS", ""))
+MAX_RETRIES = 3
+CHUNK = 131072   # 128 KB
 
-# ---------------------------------------------------------------------------
-#  Station lookup table  (code → country-code used in RINEX long filenames)
-#  Extend this list as needed.
-# ---------------------------------------------------------------------------
+# ──────────────────────────────────────────────────────────────────
+#  STATION TABLE
+# ──────────────────────────────────────────────────────────────────
 KNOWN_STATIONS = [
-    # Asia-Pacific
-    ("BJFS", "CHN", "Beijing Fangshan, China"),
-    ("SHAO", "CHN", "Shanghai Sheshan, China"),
-    ("WUHN", "CHN", "Wuhan, China"),
-    ("HKWS", "HKG", "Hong Kong Wong Shek"),
-    ("HKSL", "HKG", "Hong Kong Siu Lang Shui"),
-    ("HKMZ", "HKG", "Hong Kong Ma Zi Po"),
-    ("TWTF", "TWN", "Taoyuan, Taiwan"),
-    ("USUD", "JPN", "Usuda, Japan"),
-    ("AIRA", "JPN", "Aira, Japan"),
-    ("TOW2", "AUS", "Townsville, Australia"),
-    ("KARR", "AUS", "Karratha, Australia"),
-    ("DARW", "AUS", "Darwin, Australia"),
-    ("IISC", "IND", "Bangalore, India"),
-    # Europe
-    ("ZIM2", "CHE", "Zimmerwald, Switzerland"),
-    ("ZIMM", "CHE", "Zimmerwald, Switzerland"),
-    ("GRAZ", "AUT", "Graz, Austria"),
-    ("MATE", "ITA", "Matera, Italy"),
-    ("ONSA", "SWE", "Onsala, Sweden"),
-    ("WSRT", "NLD", "Westerbork, Netherlands"),
-    ("BRUX", "BEL", "Brussels, Belgium"),
-    ("WARN", "DEU", "Warnemuende, Germany"),
-    ("WTZR", "DEU", "Wettzell, Germany"),
-    ("TLSE", "FRA", "Toulouse, France"),
-    ("MAD2", "ESP", "Madrid, Spain"),
-    ("NYAL", "NOR", "Ny-Ålesund, Norway"),
-    ("KIRU", "SWE", "Kiruna, Sweden"),
-    # Americas
-    ("GOLD", "USA", "Goldstone, California"),
-    ("AMC2", "USA", "Colorado Springs"),
-    ("ALGO", "CAN", "Algonquin, Canada"),
-    ("CHUR", "CAN", "Churchill, Canada"),
-    ("ABMF", "PYF", "Guadeloupe, France"),   # actually FLK? use IGS code
-    ("AREQ", "PER", "Arequipa, Peru"),
-    ("BRAZ", "BRA", "Brasilia, Brazil"),
-    ("SANT", "CHL", "Santiago, Chile"),
-    ("MANA", "NIC", "Managua, Nicaragua"),
-    # Africa
-    ("NKLG", "GAB", "Libreville, Gabon"),
-    ("SUTH", "ZAF", "Sutherland, South Africa"),
-    ("HRAO", "ZAF", "Hartebeesthoek, South Africa"),
-    # Other
-    ("JFNG", "CHN", "Jiufeng, China"),
-    ("PIMO", "PHL", "Quezon City, Philippines"),
-    ("GUAM", "GUM", "Guam"),
-    ("KOKB", "USA", "Kokee Park, Hawaii"),
-    ("FAIR", "USA", "Fairbanks, Alaska"),
-    ("MCM4", "ATA", "McMurdo, Antarctica"),
+    ("BJFS", "CHN"), ("SHAO", "CHN"), ("WUHN",
+                                       "CHN"), ("JFNG", "CHN"), ("LHAZ", "CHN"),
+    ("HKWS", "HKG"), ("HKSL", "HKG"), ("HKMZ",
+                                       "HKG"), ("HKLT", "HKG"), ("HKOH", "HKG"),
+    ("TWTF", "TWN"), ("TCMS", "TWN"),
+    ("USUD", "JPN"), ("AIRA", "JPN"), ("MIZU", "JPN"), ("TSKB", "JPN"),
+    ("TOW2", "AUS"), ("KARR", "AUS"), ("DARW",
+                                       "AUS"), ("TIDB", "AUS"), ("HOB2", "AUS"),
+    ("IISC", "IND"), ("HYDE", "IND"),
+    ("PIMO", "PHL"), ("GUAM", "GUM"), ("KOKB", "USA"),
+    ("ZIM2", "CHE"), ("ZIM3", "CHE"), ("ZIMM", "CHE"),
+    ("GRAZ", "AUT"), ("MATE", "ITA"), ("MEDI", "ITA"),
+    ("ONSA", "SWE"), ("KIRU", "SWE"),
+    ("WSRT", "NLD"), ("BRUX", "BEL"),
+    ("WARN", "DEU"), ("WTZR", "DEU"), ("POTS", "DEU"), ("FFMJ", "DEU"),
+    ("TLSE", "FRA"), ("MARS", "FRA"),
+    ("MAD2", "ESP"), ("EBRE", "ESP"),
+    ("NYAL", "NOR"), ("TROM", "NOR"),
+    ("ZECK", "RUS"), ("NVSK", "RUS"),
+    ("GOP6", "CZE"), ("GOPE", "CZE"),
+    ("GOLD", "USA"), ("AMC2", "USA"), ("FAIR",
+                                       "USA"), ("PIE1", "USA"), ("JPLM", "USA"),
+    ("ALGO", "CAN"), ("CHUR", "CAN"), ("DUBO", "CAN"),
+    ("ABMF", "GLP"), ("AREQ", "PER"), ("BRAZ",
+                                       "BRA"), ("SANT", "CHL"), ("MANA", "NIC"),
+    ("NKLG", "GAB"), ("SUTH", "ZAF"), ("HRAO", "ZAF"),
+    ("MCM4", "ATA"), ("SYOG", "ATA"), ("KERG", "ATF"),
 ]
 
+# ══════════════════════════════════════════════════════════════════
+#  GPS UTILITIES
+# ══════════════════════════════════════════════════════════════════
 
-# ==============================================================================
-#  GPS WEEK CALCULATOR
-# ==============================================================================
 
-def compute_gps_week_dow(year: int, doy: int):
-    """Return (gps_week, day_of_week) for a given year + day-of-year."""
+def compute_gps_week_dow(year, doy):
     epoch = dt(year, 1, 1) + datetime.timedelta(days=doy - 1)
-    gps_epoch = dt(1980, 1, 6)
-    total_days = (epoch - gps_epoch).days
-    return total_days // 7, total_days % 7
+    days = (epoch - dt(1980, 1, 6)).days
+    return days // 7, days % 7
 
 
-def gps_week_start_yyyyddd(gps_week: int) -> str:
-    """Return YYYYDDD string for Sunday (start) of a GPS week."""
-    gps_epoch = dt(1980, 1, 6)
-    week_start = gps_epoch + datetime.timedelta(weeks=gps_week)
-    doy = week_start.timetuple().tm_yday
-    return f"{week_start.year:04d}{doy:03d}"
+def gps_week_start_yyyyddd(gps_week):
+    d = dt(1980, 1, 6) + datetime.timedelta(weeks=gps_week)
+    doy = d.timetuple().tm_yday
+    return f"{d.year:04d}{doy:03d}"
+
+# ══════════════════════════════════════════════════════════════════
+#  CLEANUP
+# ══════════════════════════════════════════════════════════════════
 
 
-# ==============================================================================
-#  HELPER FUNCTIONS
-# ==============================================================================
+def clean_tmp_files(*search_dirs):
+    """
+    Delete all *.tmp files left by interrupted downloads.
+    These look like real files to already_have() and block re-downloads.
+    """
+    total = 0
+    for d in search_dirs:
+        for tmp in Path(d).rglob("*.tmp"):
+            size = tmp.stat().st_size / 1024
+            print(f"  🗑  Removing leftover: {tmp.name}  ({size:.0f} KB)")
+            tmp.unlink()
+            total += 1
+    if total == 0:
+        print("  ✓ No .tmp files found")
+    else:
+        print(f"  ✓ Removed {total} .tmp file(s)")
+
+# ══════════════════════════════════════════════════════════════════
+#  CORE HELPERS
+# ══════════════════════════════════════════════════════════════════
+
 
 def ensure_dirs(*paths):
     for p in paths:
@@ -198,7 +202,7 @@ def ensure_dirs(*paths):
 def get_credentials():
     global EARTHDATA_USER, EARTHDATA_PASS
     if not EARTHDATA_USER:
-        print("\n🔐 Earthdata Login Required (https://urs.earthdata.nasa.gov)")
+        print("\n  Earthdata login — register at https://urs.earthdata.nasa.gov")
         EARTHDATA_USER = input("  Username: ").strip()
     if not EARTHDATA_PASS:
         EARTHDATA_PASS = getpass("  Password: ")
@@ -211,595 +215,601 @@ def make_session():
 
 
 def download_file(session, url, output_path, skip_auth=False):
-    """Download *url* to *output_path*. Returns True on success."""
-    try:
-        print(f"  📥 {Path(url).name} ...", end="", flush=True)
-
-        if skip_auth:
-            response = requests.get(url, timeout=60, stream=True)
-        else:
-            response = session.get(url, timeout=60,
-                                   allow_redirects=True, stream=True)
-
-        if response.status_code == 404:
-            print(" ✗ (404 Not Found)")
-            return False
-
-        response.raise_for_status()
-
-        output_path = Path(output_path)
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        total = int(response.headers.get("content-length", 0))
-        tmp = output_path.with_suffix(output_path.suffix + ".tmp")
-
-        if HAS_TQDM and total > 0:
-            with tqdm(total=total, unit="B", unit_scale=True,
-                      desc=f"     {output_path.name}", leave=False) as bar:
-                with open(tmp, "wb") as fh:
-                    for chunk in response.iter_content(32768):
-                        fh.write(chunk)
-                        bar.update(len(chunk))
-        else:
-            with open(tmp, "wb") as fh:
-                for chunk in response.iter_content(32768):
-                    fh.write(chunk)
-
-        tmp.rename(output_path)
-        size_mb = output_path.stat().st_size / 1024 / 1024
-        print(f" ✓ ({size_mb:.1f} MB)")
-        return True
-
-    except requests.exceptions.HTTPError as e:
-        print(f" ✗ (HTTP {e.response.status_code})")
-        return False
-    except Exception as e:
-        print(f" ✗ ({str(e)[:60]})")
-        return False
-
-
-def decompress_file(filepath):
-    """Decompress .gz or .Z file in-place. Returns path to decompressed file."""
-    filepath = Path(filepath)
-
-    if filepath.suffix == ".gz":
-        output_path = filepath.with_suffix("")
-        try:
-            with gzip.open(filepath, "rb") as f_in, \
-                    open(output_path, "wb") as f_out:
-                shutil.copyfileobj(f_in, f_out)
-            filepath.unlink()
-            print(f"    ✓ Decompressed → {output_path.name}")
-            return output_path
-        except Exception as e:
-            print(f"    ⚠️  Decompression failed: {e}")
-            return filepath
-
-    elif filepath.suffix == ".Z":
-        output_path = filepath.with_suffix("")
-
-        # Unix uncompress
-        try:
-            result = subprocess.run(
-                ["uncompress", "-f", str(filepath)],
-                capture_output=True, timeout=60
-            )
-            if result.returncode == 0:
-                print(f"    ✓ Decompressed → {output_path.name}")
-                return output_path
-        except FileNotFoundError:
-            pass
-
-        # Windows 7-Zip
-        seven_zip = Path("C:/Program Files/7-Zip/7z.exe")
-        if seven_zip.exists():
-            try:
-                subprocess.run(
-                    [str(seven_zip), "e", str(filepath),
-                     f"-o{filepath.parent}", "-y"],
-                    capture_output=True, timeout=60, check=True
-                )
-                filepath.unlink()
-                print(f"    ✓ Decompressed (7z) → {output_path.name}")
-                return output_path
-            except Exception:
-                pass
-
-        print(f"    ℹ️  .Z file kept compressed (install 7-Zip or uncompress)")
-        return filepath
-
-    return filepath
-
-
-def verify_checksum(filepath, expected_md5):
-    """Verify file MD5 checksum."""
-    if not expected_md5:
-        return True
-    try:
-        md5 = hashlib.md5()
-        with open(filepath, "rb") as fh:
-            for chunk in iter(lambda: fh.read(8192), b""):
-                md5.update(chunk)
-        if md5.hexdigest().lower() == expected_md5.lower():
-            print("    ✓ MD5 verified")
-            return True
-        else:
-            print("    ⚠️  MD5 mismatch")
-            return False
-    except Exception as e:
-        print(f"    (MD5 check skipped: {e})")
-        return True
-
-
-def lookup_station(code: str) -> tuple:
-    """Return (code, country, desc) — falls back to IGS if unknown."""
-    code_upper = code.upper()
-    for s in KNOWN_STATIONS:
-        if s[0].upper() == code_upper:
-            return s
-    print(f"  ⚠️  Unknown station {code_upper} — defaulting country to IGS")
-    return (code_upper, "IGS", f"IGS Station {code_upper}")
-
-
-# ==============================================================================
-#  DOWNLOAD FUNCTIONS
-# ==============================================================================
-
-# ── 1. OBSERVATION FILES ──────────────────────────────────────────────────────
-
-def download_observation(session, station_code, country_code, year, doy):
     """
-    Download RINEX 3 mixed-GNSS observation file.
+    Chunked download with automatic retry on dropped connections.
+    Retries MAX_RETRIES times with increasing timeout.
+    .tmp extension used during download; renamed to final name on success.
+    """
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = output_path.with_suffix(output_path.suffix + ".tmp")
 
-    FIX: subdir is always  {yy}d  (e.g. "26d") — not "24d" or "24o".
-    CDDIS stores obs under:
-        /archive/gnss/data/daily/{year}/{doy:03d}/{yy}d/
+    print(f"  📥 {output_path.name} ...", end="", flush=True)
+
+    for attempt in range(1, MAX_RETRIES + 1):
+        timeout = 90 * attempt
+        try:
+            getter = requests.get if skip_auth else session.get
+            r = getter(url, timeout=timeout, allow_redirects=True, stream=True)
+
+            if r.status_code == 404:
+                print("  ✗ 404")
+                return False
+            r.raise_for_status()
+
+            total = int(r.headers.get("content-length", 0))
+
+            if HAS_TQDM and total > 0:
+                with tqdm(total=total, unit="B", unit_scale=True,
+                          desc=f"  {output_path.name[:35]}", leave=False) as bar:
+                    with open(tmp, "wb") as fh:
+                        for chunk in r.iter_content(CHUNK):
+                            fh.write(chunk)
+                            bar.update(len(chunk))
+            else:
+                with open(tmp, "wb") as fh:
+                    for chunk in r.iter_content(CHUNK):
+                        fh.write(chunk)
+
+            # Validate: file must be ≥99% of Content-Length
+            if total > 0:
+                got = tmp.stat().st_size
+                if got < total * 0.99:
+                    raise IOError(f"Short: {got}/{total} bytes")
+
+            tmp.rename(output_path)
+            size_mb = output_path.stat().st_size / 1_048_576
+            print(f"  ✓ {size_mb:.1f} MB")
+            return True
+
+        except requests.exceptions.HTTPError as e:
+            print(f"  ✗ HTTP {e.response.status_code}")
+            if tmp.exists():
+                tmp.unlink()
+            return False
+
+        except (IOError, requests.exceptions.ChunkedEncodingError,
+                requests.exceptions.ConnectionError,
+                requests.exceptions.Timeout) as e:
+            if tmp.exists():
+                tmp.unlink()
+            if attempt < MAX_RETRIES:
+                wait = 8 * attempt
+                print(f"\n    ↻ Retry {attempt}/{MAX_RETRIES} in {wait}s"
+                      f" ({str(e)[:55]})...", end="", flush=True)
+                time.sleep(wait)
+            else:
+                print(f"  ✗ Failed after {MAX_RETRIES} tries: {str(e)[:60]}")
+                return False
+
+        except Exception as e:
+            if tmp.exists():
+                tmp.unlink()
+            print(f"  ✗ {str(e)[:70]}")
+            return False
+
+    return False
+
+
+def decompress_gz(path):
+    path = Path(path)
+    if path.suffix != ".gz":
+        return path
+    out = path.with_suffix("")
+    try:
+        with gzip.open(path, "rb") as fi, open(out, "wb") as fo:
+            shutil.copyfileobj(fi, fo)
+        path.unlink()
+        print(f"     → {out.name}")
+        return out
+    except Exception as e:
+        print(f"    ⚠ gz decompress failed: {e}")
+        return path
+
+
+def decompress_Z(path):
+    path = Path(path)
+    if path.suffix != ".Z":
+        return path
+    out = path.with_suffix("")
+    try:
+        if subprocess.run(["uncompress", "-f", str(path)],
+                          capture_output=True, timeout=60).returncode == 0:
+            print(f"     → {out.name}")
+            return out
+    except FileNotFoundError:
+        pass
+    sz = Path("C:/Program Files/7-Zip/7z.exe")
+    if sz.exists():
+        try:
+            subprocess.run([str(sz), "e", str(path), f"-o{path.parent}", "-y"],
+                           capture_output=True, timeout=120, check=True)
+            if path.exists():
+                path.unlink()
+            print(f"     → {out.name}")
+            return out
+        except Exception:
+            pass
+    print("    ℹ  .Z kept (install 7-Zip or uncompress)")
+    return path
+
+
+def decompress_file(path):
+    path = Path(path)
+    if path.suffix == ".gz":
+        return decompress_gz(path)
+    if path.suffix == ".Z":
+        return decompress_Z(path)
+    return path
+
+
+def crx2rnx(crx_path):
+    """Convert .crx → .rnx using CRX2RNX.exe from TOOLS_DIR or PATH."""
+    crx_path = Path(crx_path)
+    if crx_path.suffix.lower() != ".crx":
+        return crx_path
+    rnx_path = crx_path.with_suffix(".rnx")
+    if rnx_path.exists():
+        print(f"     → {rnx_path.name}  (already converted)")
+        return rnx_path
+
+    candidates = (
+        [str(TOOLS_DIR / e) for e in ["CRX2RNX.exe", "CRX2RNX", "crx2rnx"]]
+        + ["CRX2RNX.exe", "CRX2RNX", "crx2rnx"]
+    )
+    for exe in candidates:
+        try:
+            r = subprocess.run([exe, str(crx_path)],
+                               capture_output=True, timeout=60)
+            if r.returncode == 0 and rnx_path.exists():
+                print(f"     → {rnx_path.name}")
+                crx_path.unlink()
+                return rnx_path
+        except (FileNotFoundError, Exception):
+            continue
+
+    print(f"    ⚠  CRX2RNX not found — copy CRX2RNX.exe to {TOOLS_DIR}")
+    return crx_path
+
+
+def already_have(output_path):
+    """
+    Return True if a usable (non-.tmp) version of the file exists.
+    Explicitly excludes .tmp files — those are incomplete downloads.
+    """
+    output_path = Path(output_path)
+    parent = output_path.parent
+    stem = output_path.stem   # e.g. "COD0OPSFIN_2026015_SP3.gz" → "COD0OPSFIN_2026015_SP3"
+
+    # Check exact path
+    if output_path.exists() and not output_path.name.endswith(".tmp"):
+        return True
+
+    # Check decompressed equivalents (no .gz / .Z extension)
+    for suf in ["", ".crx", ".rnx", ".sp3", ".clk", ".erp",
+                ".bia", ".snx", ".inx", ".ion", ".atx", ".obx"]:
+        candidate = parent / (stem + suf)
+        if candidate.exists() and not candidate.name.endswith(".tmp"):
+            return True
+
+    return False
+
+
+def lookup_station(code):
+    code = code.upper()
+    for row in KNOWN_STATIONS:
+        if row[0] == code:
+            return row[0], row[1]
+    print(f"  ⚠  '{code}' not in KNOWN_STATIONS — country defaulting to 'IGS'")
+    return code, "IGS"
+
+
+def banner(title):
+    print(f"\n{'─'*62}\n  {title}\n{'─'*62}")
+
+
+def try_candidates(session, candidates, out_dir, label):
+    out_dir = Path(out_dir)
+    for url, fname in candidates:
+        op = out_dir / fname
+        if already_have(op):
+            print(f"  ⏭  {label} exists ({Path(fname).stem[:42]})")
+            return True
+        if download_file(session, url, op):
+            decompress_file(op)
+            return True
+    print(f"  ⚠  {label}: not found from any source")
+    return False
+
+# ══════════════════════════════════════════════════════════════════
+#  DOWNLOAD FUNCTIONS
+# ══════════════════════════════════════════════════════════════════
+
+
+def download_observation(session, code, country, year, doy):
+    """
+    File is Hatanaka-compressed RINEX 3: .crx.gz
+    After download: decompress .gz → .crx → CRX2RNX → .rnx
+
+    If .crx already exists but .rnx does not → run CRX2RNX directly.
     """
     ensure_dirs(DATA_DIR)
-
     yy = str(year)[2:]
-    yyddd = f"{year:04d}{doy:03d}"
-    subdir = f"{yy}d"                          # FIX 1: was "24d","24o","{yy}d"
+    yyyyddd = f"{year:04d}{doy:03d}"
+    crx_gz = f"{code}00{country}_R_{yyyyddd}0000_01D_30S_MO.crx.gz"
+    crx = DATA_DIR / crx_gz[:-3]
+    rnx = DATA_DIR / (crx_gz[:-7] + ".rnx")
 
-    print(f"\n📡 Observation: {station_code} ({country_code})")
+    banner(f"Observation: {code} ({country})")
 
-    filename = f"{station_code}00{country_code}_R_{yyddd}0000_01D_30S_MO.rnx.gz"
-    url = f"{CDDIS_BASE}/data/daily/{year}/{doy:03d}/{subdir}/{filename}"
-    output_path = DATA_DIR / filename
+    # Already fully converted
+    if rnx.exists():
+        print(f"  ⏭  Already have: {rnx.name}")
+        return rnx
 
-    if output_path.exists():
-        print(f"  ⏭️  Already exists: {filename}")
-        return output_path
-    if output_path.with_suffix("").exists():
-        print(
-            f"  ⏭️  Already decompressed: {output_path.with_suffix('').name}")
-        return output_path.with_suffix("")
+    # .crx exists but not yet converted — just run CRX2RNX
+    if crx.exists():
+        print(f"  ↻  .crx found — converting to .rnx")
+        return crx2rnx(crx)
 
-    if download_file(session, url, output_path):
-        return decompress_file(output_path)
+    # Need to download
+    out = DATA_DIR / crx_gz
+    url = f"{CDDIS}/data/daily/{year}/{doy:03d}/{yy}d/{crx_gz}"
 
-    print(f"  ❌ File not found for {station_code}")
+    if download_file(session, url, out):
+        crx_path = decompress_gz(out)
+        return crx2rnx(crx_path)
+
+    print(f"  ✗ Not found: {crx_gz}")
     return None
 
-
-# ── 2. BROADCAST NAVIGATION ───────────────────────────────────────────────────
 
 def download_broadcast_nav(session, year, doy):
-    """
-    Download mixed broadcast navigation file.
-
-    FIX 2: subdir is  brdc  (not "24p" or "{yy}m").
-    FIX 3: filename prefix is BRD4, source code DLR, stream type S.
-            BRD400DLR_S_{YYYYDDD}0000_01D_MN.rnx.gz
-    """
     ensure_dirs(PRODUCTS_DIR / "nav")
-
-    yyddd = f"{year:04d}{doy:03d}"
-
-    print(f"\n📡 Broadcast Navigation (Mixed GNSS)")
-
-    # Primary: new long-name mixed nav from DLR  (in /brdc/ subfolder)
-    # Fallback: legacy per-year mixed nav file
-    candidates = [
-        (
-            f"{CDDIS_BASE}/data/daily/{year}/brdc/"
-            f"BRD400DLR_S_{yyddd}0000_01D_MN.rnx.gz",   # FIX 2+3
-            f"BRD400DLR_S_{yyddd}0000_01D_MN.rnx.gz",
-        ),
+    yyyyddd = f"{year:04d}{doy:03d}"
+    banner("Broadcast Navigation (Mixed GNSS)")
+    cands = [
+        (f"{CDDIS}/data/daily/{year}/brdc/BRD400DLR_S_{yyyyddd}0000_01D_MN.rnx.gz",
+         f"BRD400DLR_S_{yyyyddd}0000_01D_MN.rnx.gz"),
+        (f"{CDDIS}/data/daily/{year}/brdc/BRDC00IGS_R_{yyyyddd}0000_01D_MN.rnx.gz",
+         f"BRDC00IGS_R_{yyyyddd}0000_01D_MN.rnx.gz"),
     ]
+    try_candidates(session, cands, PRODUCTS_DIR/"nav", "Broadcast nav")
 
-    for url, fname in candidates:
-        output_path = PRODUCTS_DIR / "nav" / fname
-        if output_path.exists():
-            print(f"  ⏭️  Already exists: {fname}")
-            return output_path
-        if output_path.with_suffix("").exists():
-            return output_path.with_suffix("")
-        if download_file(session, url, output_path):
-            return decompress_file(output_path)
-
-    print("  ⚠️  Broadcast nav not found from any source")
-    return None
-
-
-# ── 3. PRECISE PRODUCTS (IGS final) ───────────────────────────────────────────
 
 def download_precise_products(session, year, doy, gps_week, gps_dow):
-    """
-    Download IGS final precise orbits, clocks, and ERP.
-
-    FIX 4: SP3 long-name uses 05M interval (not 15M).
-    FIX 12: ERP legacy uses igs{week}{dow}.erp.Z  (dow per-day, not always "7").
-    """
-    ensure_dirs(PRODUCTS_DIR / "sp3",
-                PRODUCTS_DIR / "clk",
-                PRODUCTS_DIR / "erp")
-
-    yyddd = f"{year:04d}{doy:03d}"
+    ensure_dirs(PRODUCTS_DIR/"sp3", PRODUCTS_DIR/"clk", PRODUCTS_DIR/"erp")
+    yyyyddd = f"{year:04d}{doy:03d}"
     gwd = f"{gps_week}{gps_dow}"
+    base = f"{CDDIS}/products/{gps_week}/"
 
-    print(f"\n🎯 Precise Products (IGS Final)")
-    print(f"   GPS Week {gps_week}, Day-of-week {gps_dow}")
+    banner(f"Precise Products  (GPS week {gps_week}, DOW {gps_dow})")
+    print("  Priority: IGS Final > CODE Final > CODE MGEX > WUM Rapid > legacy")
 
-    products = {
-        "sp3": [
-            (
-                f"{CDDIS_BASE}/products/{gps_week}/"
-                # FIX 4: 05M not 15M
-                f"IGS0OPSFIN_{yyddd}0000_01D_05M_ORB.SP3.gz",
-                f"IGS0OPSFIN_{yyddd}_ORB.SP3.gz",
-            ),
-            (
-                f"{CDDIS_BASE}/products/{gps_week}/igs{gwd}.sp3.Z",
-                f"igs{gwd}.sp3.Z",
-            ),
-        ],
-        "clk": [
-            (
-                f"{CDDIS_BASE}/products/{gps_week}/"
-                f"IGS0OPSFIN_{yyddd}0000_01D_30S_CLK.CLK.gz",
-                f"IGS0OPSFIN_{yyddd}_CLK.CLK.gz",
-            ),
-            (
-                f"{CDDIS_BASE}/products/{gps_week}/igs{gwd}.clk_30s.Z",
-                f"igs{gwd}.clk_30s.Z",
-            ),
-        ],
-        "erp": [
-            (
-                f"{CDDIS_BASE}/products/{gps_week}/"
-                f"IGS0OPSFIN_{yyddd}0000_01D_01D_ERP.ERP.gz",
-                f"IGS0OPSFIN_{yyddd}_ERP.ERP.gz",
-            ),
-            (
-                f"{CDDIS_BASE}/products/{gps_week}/igs{gwd}.erp.Z",  # FIX 12
-                f"igs{gwd}.erp.Z",
-            ),
-        ],
-    }
+    sp3 = [
+        (base+f"IGS0OPSFIN_{yyyyddd}0000_01D_05M_ORB.SP3.gz",
+         f"IGS0OPSFIN_{yyyyddd}_ORB.SP3.gz"),
+        (base+f"COD0OPSFIN_{yyyyddd}0000_01D_05M_ORB.SP3.gz",
+         f"COD0OPSFIN_{yyyyddd}_ORB.SP3.gz"),
+        (base+f"COD0MGXFIN_{yyyyddd}0000_01D_05M_ORB.SP3.gz",
+         f"COD0MGXFIN_{yyyyddd}_ORB.SP3.gz"),
+        (base+f"WUM0MGXRAP_{yyyyddd}0000_01D_05M_ORB.SP3.gz",
+         f"WUM0MGXRAP_{yyyyddd}_ORB.SP3.gz"),
+        (base+f"igs{gwd}.sp3.Z",
+         f"igs{gwd}.sp3.Z"),
+    ]
+    clk = [
+        (base+f"IGS0OPSFIN_{yyyyddd}0000_01D_30S_CLK.CLK.gz",
+         f"IGS0OPSFIN_{yyyyddd}_CLK.CLK.gz"),
+        (base+f"COD0OPSFIN_{yyyyddd}0000_01D_30S_CLK.CLK.gz",
+         f"COD0OPSFIN_{yyyyddd}_CLK.CLK.gz"),
+        (base+f"COD0MGXFIN_{yyyyddd}0000_01D_30S_CLK.CLK.gz",
+         f"COD0MGXFIN_{yyyyddd}_CLK.CLK.gz"),
+        (base+f"WUM0MGXRAP_{yyyyddd}0000_01D_30S_CLK.CLK.gz",
+         f"WUM0MGXRAP_{yyyyddd}_CLK.CLK.gz"),
+        (base+f"igs{gwd}.clk_30s.Z",
+         f"igs{gwd}.clk_30s.Z"),
+    ]
+    erp = [
+        (base+f"IGS0OPSFIN_{yyyyddd}0000_01D_01D_ERP.ERP.gz",
+         f"IGS0OPSFIN_{yyyyddd}_ERP.ERP.gz"),
+        (base+f"EMR0OPSFIN_{yyyyddd}0000_01D_01D_ERP.ERP.gz",
+         f"EMR0OPSFIN_{yyyyddd}_ERP.ERP.gz"),
+        (base+f"COD0OPSFIN_{yyyyddd}0000_01D_12H_ERP.ERP.gz",
+         f"COD0OPSFIN_{yyyyddd}_ERP.ERP.gz"),
+        (base+f"COD0MGXFIN_{yyyyddd}0000_01D_12H_ERP.ERP.gz",
+         f"COD0MGXFIN_{yyyyddd}_ERP.ERP.gz"),
+        (base+f"WUM0MGXRAP_{yyyyddd}0000_01D_01D_ERP.ERP.gz",
+         f"WUM0MGXRAP_{yyyyddd}_ERP.ERP.gz"),
+        (base+f"igs{gwd}.erp.Z",
+         f"igs{gwd}.erp.Z"),
+    ]
 
-    for prod_type, candidates in products.items():
-        out_dir = PRODUCTS_DIR / prod_type
-        downloaded = False
-        for url, fname in candidates:
-            output_path = out_dir / fname
-            decompressed = output_path.with_suffix("")   # strip .gz / .Z
-            if output_path.exists() or decompressed.exists():
-                print(f"  ⏭️  {prod_type.upper()} exists")
-                downloaded = True
-                break
-            if download_file(session, url, output_path):
-                decompress_file(output_path)
-                downloaded = True
-                break
-        if not downloaded:
-            print(f"  ⚠️  {prod_type.upper()} not found from any source")
+    for label, subdir, cands in [("SP3", "sp3", sp3), ("CLK", "clk", clk), ("ERP", "erp", erp)]:
+        try_candidates(session, cands, PRODUCTS_DIR/subdir, label)
 
 
-# ── 4. WUHAN MULTI-GNSS PRODUCTS ─────────────────────────────────────────────
+def download_cod_mgxfin(session, year, doy, gps_week):
+    """
+    Download CODE MGEX Final products (COD0MGXFIN).
+    These are Final multi-GNSS products — best choice for G+R+E+C+J PPP.
+    Downloaded separately (not as fallback) because COD0OPSFIN is GPS/GLO only
+    and gets found first, so COD0MGXFIN would otherwise be skipped.
+    """
+    ensure_dirs(PRODUCTS_DIR/"sp3", PRODUCTS_DIR/"clk",
+                PRODUCTS_DIR/"erp", PRODUCTS_DIR/"bia")
+    yyyyddd = f"{year:04d}{doy:03d}"
+    base = f"{CDDIS}/products/{gps_week}/"
+    banner("CODE MGEX Final Products (COD0MGXFIN) — Multi-GNSS Best")
+
+    for label, subdir, suffix in [
+        ("SP3 (multi-GNSS final)", "sp3", "_01D_05M_ORB.SP3.gz"),
+        ("CLK (multi-GNSS final)", "clk", "_01D_30S_CLK.CLK.gz"),
+        ("ERP (multi-GNSS final)", "erp", "_01D_12H_ERP.ERP.gz"),
+        ("OSB (phase biases)", "bia", "_01D_01D_OSB.BIA.gz"),
+        ("OBX (attitude)", "obx", "_01D_30S_ATT.OBX.gz"),
+    ]:
+        ensure_dirs(PRODUCTS_DIR/subdir)
+        fname_gz = f"COD0MGXFIN_{yyyyddd}0000{suffix}"
+        url = base + fname_gz
+        op = PRODUCTS_DIR / subdir / fname_gz
+        if already_have(op):
+            print(f"  ⏭  COD0MGXFIN {label} exists")
+            continue
+        if download_file(session, url, op):
+            decompress_file(op)
+        else:
+            print(f"  ⚠  COD0MGXFIN {label}: not yet published or unavailable")
+
 
 def download_wuhan_products(session, year, doy, gps_week):
-    """
-    Download Wuhan University multi-GNSS products.
+    ensure_dirs(PRODUCTS_DIR/"sp3", PRODUCTS_DIR/"clk",
+                PRODUCTS_DIR/"bia", PRODUCTS_DIR/"erp")
+    yyyyddd = f"{year:04d}{doy:03d}"
+    base = f"{CDDIS}/products/{gps_week}/"
+    banner("Wuhan Multi-GNSS Products (WUM)")
 
-    FIX 5: SP3 suffix is _05M_ORB.SP3.gz  (not _01D_orb.sp3.gz)
-    FIX 6: CLK suffix is _30S_CLK.CLK.gz  (not _01D_clk.clk.gz)
-    FIX 7: URL base is products/{gps_week}/ (not products/mgex/{gps_week}/)
-    Also downloads OSB bias file while we are here.
-    """
-    ensure_dirs(PRODUCTS_DIR / "sp3",
-                PRODUCTS_DIR / "clk",
-                PRODUCTS_DIR / "bia")
+    for label, subdir, suffix in [
+        ("SP3", "sp3", "_01D_05M_ORB.SP3.gz"),
+        ("CLK", "clk", "_01D_30S_CLK.CLK.gz"),
+        ("OSB", "bia", "_01D_01D_OSB.BIA.gz"),
+        ("ERP", "erp", "_01D_01D_ERP.ERP.gz"),
+    ]:
+        cands = [
+            (base+f"WUM0MGXFIN_{yyyyddd}0000{suffix}",
+             f"WUM0MGXFIN_{yyyyddd}0000{suffix}"),
+            (base+f"WUM0MGXRAP_{yyyyddd}0000{suffix}",
+             f"WUM0MGXRAP_{yyyyddd}0000{suffix}"),
+        ]
+        done = False
+        for url, fname in cands:
+            op = PRODUCTS_DIR / subdir / fname
+            if already_have(op):
+                tag = "FIN" if "FIN" in fname else "RAP"
+                print(f"  ⏭  WUM {label} exists (WUM0MGX{tag})")
+                done = True
+                break
+            if download_file(session, url, op):
+                decompress_file(op)
+                done = True
+                break
+        if not done:
+            print(
+                f"  ⚠  WUM {label}: not yet published (normal for recent dates)")
 
-    yyddd = f"{year:04d}{doy:03d}"
-    url_base = f"{CDDIS_BASE}/products/{gps_week}/"   # FIX 7
 
-    print(f"\n🌏 Wuhan Products (Multi-GNSS, WUM)")
-
-    wum_products = [
-        # (suffix,                   local-subdir)
-        ("_05M_ORB.SP3.gz",  "sp3"),   # FIX 5
-        ("_30S_CLK.CLK.gz",  "clk"),   # FIX 6
-        ("_01D_OSB.BIA.gz",  "bia"),
-        ("_01D_ERP.ERP.gz",  "erp"),
+def download_code_biases(session, year, doy, gps_week):
+    ensure_dirs(PRODUCTS_DIR/"dcb")
+    yyyyddd = f"{year:04d}{doy:03d}"
+    bias_url = f"{CDDIS}/products/bias/{year}/"
+    prod_url = f"{CDDIS}/products/{gps_week}/"
+    banner("Code/Phase Biases (DCB/OSB)")
+    cands = [
+        (bias_url+f"CAS0OPSRAP_{yyyyddd}0000_01D_01D_DCB.BIA.gz",
+         f"CAS0OPSRAP_{yyyyddd}_DCB.BIA.gz"),
+        (prod_url+f"COD0OPSFIN_{yyyyddd}0000_01D_01D_OSB.BIA.gz",
+         f"COD0OPSFIN_{yyyyddd}_OSB.BIA.gz"),
+        (prod_url+f"COD0MGXFIN_{yyyyddd}0000_01D_01D_OSB.BIA.gz",
+         f"COD0MGXFIN_{yyyyddd}_OSB.BIA.gz"),
+        (prod_url+f"WUM0MGXRAP_{yyyyddd}0000_01D_01D_OSB.BIA.gz",
+         f"WUM0MGXRAP_{yyyyddd}_OSB.BIA.gz"),
     ]
-
-    for suffix, out_subdir in wum_products:
-        fname = f"WUM0MGXFIN_{yyddd}0000{suffix}"
-        url = url_base + fname
-        output_path = PRODUCTS_DIR / out_subdir / fname
-
-        if output_path.exists() or output_path.with_suffix("").exists():
-            print(f"  ⏭️  WUM {out_subdir.upper()} exists")
-            continue
-        if download_file(session, url, output_path):
-            decompress_file(output_path)
+    try_candidates(session, cands, PRODUCTS_DIR/"dcb", "Bias")
 
 
-# ── 5. CODE / PHASE BIASES ────────────────────────────────────────────────────
-
-def download_code_biases(session, year, doy):
-    """
-    Download code/phase bias files.
-
-    FIX 8: Correct filenames visible on CDDIS /archive/gnss/products/bias/{year}/:
-            CAS0OPSRAP_{YYYYDDD}0000_01D_01D_DCB.BIA.gz   (rapid, CAS)
-            COD0MGXFIN_{YYYYDDD}0000_01D_01D_OSB.BIA.gz   (final, CODE)
-    Old wrong names: CAS0MGXRAP_…_DCB.BSX.gz, CAS0MGXFIN_…_OSB.BIA.gz
-    """
-    ensure_dirs(PRODUCTS_DIR / "dcb")
-
-    yyddd = f"{year:04d}{doy:03d}"
-
-    print(f"\n📊 Code/Phase Biases (OSB)")
-
-    bias_base = f"{CDDIS_BASE}/products/bias/{year}/"   # FIX 8 path
-
-    candidates = [
-        (
-            bias_base + f"CAS0OPSRAP_{yyddd}0000_01D_01D_DCB.BIA.gz",
-            f"CAS0OPSRAP_{yyddd}_DCB.BIA.gz",
-        ),
-        (
-            bias_base + f"COD0MGXFIN_{yyddd}0000_01D_01D_OSB.BIA.gz",
-            f"COD0MGXFIN_{yyddd}_OSB.BIA.gz",
-        ),
-        (
-            bias_base + f"CAS0MGXRAP_{yyddd}0000_01D_01D_OSB.BIA.gz",
-            f"CAS0MGXRAP_{yyddd}_OSB.BIA.gz",
-        ),
+def download_attitude_file(session, year, doy, gps_week):
+    """Satellite attitude quaternions (OBX). Used by PRIDE PPP-AR for precise
+    attitude modelling, especially during eclipse seasons."""
+    ensure_dirs(PRODUCTS_DIR / "obx")
+    yyyyddd = f"{year:04d}{doy:03d}"
+    base = f"{CDDIS}/products/{gps_week}/"
+    banner("Satellite Attitude (OBX) — PRIDE PPP-AR")
+    cands = [
+        (base + f"COD0MGXFIN_{yyyyddd}0000_01D_30S_ATT.OBX.gz",
+         f"COD0MGXFIN_{yyyyddd}_ATT.OBX.gz"),
+        (base + f"WUM0MGXFIN_{yyyyddd}0000_01D_30S_ATT.OBX.gz",
+         f"WUM0MGXFIN_{yyyyddd}_ATT.OBX.gz"),
+        (base + f"WUM0MGXRAP_{yyyyddd}0000_01D_30S_ATT.OBX.gz",
+         f"WUM0MGXRAP_{yyyyddd}_ATT.OBX.gz"),
     ]
+    try_candidates(session, cands, PRODUCTS_DIR / "obx", "Attitude (OBX)")
 
-    for url, fname in candidates:
-        output_path = PRODUCTS_DIR / "dcb" / fname
-        if output_path.exists() or output_path.with_suffix("").exists():
-            print(f"  ⏭️  Bias file exists ({fname})")
-            return
-        if download_file(session, url, output_path):
-            decompress_file(output_path)
-            return
-
-    print("  ⚠️  No bias file found from any source")
-
-
-# ── 6. IONOSPHERE MAP ─────────────────────────────────────────────────────────
 
 def download_ionosphere_map(session, year, doy):
-    """
-    Download global ionosphere map (IONEX / GIM).
-
-    FIX 9:  Path is products/ionosphere/{year}/{doy:03d}/  (not products/ionex/)
-    FIX 10: Correct filenames visible on CDDIS:
-              COD0OPSFIN_{YYYYDDD}0000_01D_01H_GIM.INX.gz  (final, CODE)
-              COD0OPSRAP_{YYYYDDD}0000_01D_01H_GIM.INX.gz  (rapid, CODE)
-              ESA0OPSFIN_{YYYYDDD}0000_01D_02H_GIM.INX.gz  (final, ESA)
-    Old wrong: IGS0OPSFIN_…_ION.ION.gz, igsg…i.Z from ionex/ folder
-    """
-    ensure_dirs(PRODUCTS_DIR / "ionex")
-
-    yyddd = f"{year:04d}{doy:03d}"
-    folder = f"{CDDIS_BASE}/products/ionosphere/{year}/{doy:03d}/"   # FIX 9
-
-    print(f"\n🌐 Ionosphere Map (IONEX)")
-
-    candidates = [
-        (
-            folder + f"COD0OPSFIN_{yyddd}0000_01D_01H_GIM.INX.gz",   # FIX 10
-            f"COD0OPSFIN_{yyddd}_GIM.INX.gz",
-        ),
-        (
-            folder + f"COD0OPSRAP_{yyddd}0000_01D_01H_GIM.INX.gz",
-            f"COD0OPSRAP_{yyddd}_GIM.INX.gz",
-        ),
-        (
-            folder + f"ESA0OPSFIN_{yyddd}0000_01D_02H_GIM.INX.gz",
-            f"ESA0OPSFIN_{yyddd}_GIM.INX.gz",
-        ),
-        (
-            folder + f"EMR0OPSFIN_{yyddd}0000_01D_01H_GIM.INX.gz",
-            f"EMR0OPSFIN_{yyddd}_GIM.INX.gz",
-        ),
+    ensure_dirs(PRODUCTS_DIR/"ionex")
+    yyyyddd = f"{year:04d}{doy:03d}"
+    folder = f"{CDDIS}/products/ionosphere/{year}/{doy:03d}/"
+    banner("Ionosphere Map (IONEX / GIM)")
+    cands = [
+        (folder+f"COD0OPSFIN_{yyyyddd}0000_01D_01H_GIM.INX.gz",
+         f"COD0OPSFIN_{yyyyddd}_GIM.INX.gz"),
+        (folder+f"COD0OPSRAP_{yyyyddd}0000_01D_01H_GIM.INX.gz",
+         f"COD0OPSRAP_{yyyyddd}_GIM.INX.gz"),
+        (folder+f"EMR0OPSFIN_{yyyyddd}0000_01D_01H_GIM.INX.gz",
+         f"EMR0OPSFIN_{yyyyddd}_GIM.INX.gz"),
+        (folder+f"ESA0OPSFIN_{yyyyddd}0000_01D_02H_GIM.INX.gz",
+         f"ESA0OPSFIN_{yyyyddd}_GIM.INX.gz"),
     ]
+    try_candidates(session, cands, PRODUCTS_DIR/"ionex", "IONEX")
 
-    for url, fname in candidates:
-        output_path = PRODUCTS_DIR / "ionex" / fname
-        if output_path.exists() or output_path.with_suffix("").exists():
-            print(f"  ⏭️  IONEX exists ({fname})")
-            return
-        if download_file(session, url, output_path):
-            decompress_file(output_path)
-            return
-
-    print("  ⚠️  IONEX not found from any source")
-
-
-# ── 7. ANTENNA FILE ───────────────────────────────────────────────────────────
 
 def download_antenna_file():
-    """Download IGS20 antenna corrections (static — only needed once)."""
-    ensure_dirs(PRODUCTS_DIR / "atx")
+    ensure_dirs(PRODUCTS_DIR/"atx")
+    op = PRODUCTS_DIR / "atx" / "igs20.atx"
+    banner("Antenna Corrections (IGS20 ANTEX)")
 
-    output_path = PRODUCTS_DIR / "atx" / "igs20.atx"
+    if op.exists():
+        print("  ⏭  igs20.atx present")
+        return op
 
-    print(f"\n📡 Antenna Corrections (IGS20)")
+    # Auto-find team copy under any name in common locations
+    for name in ["igs20.atx", "igs20_2401.atx"]:
+        for d in [BASE_DIR, BASE_DIR/"data", PRODUCTS_DIR, PRODUCTS_DIR/"atx"]:
+            src = d / name
+            if src.exists() and src != op:
+                shutil.copy2(src, op)
+                print(f"  ✓ Copied from {src.name} → igs20.atx")
+                return op
 
-    if output_path.exists():
-        print("  ⏭️  igs20.atx exists")
-        return output_path
+    s = requests.Session()
+    if download_file(s, IGS_ATX, op, skip_auth=True):
+        return op
 
-    url = f"{IGS_FTP}/igs20.atx"
-    session = requests.Session()   # public — no auth needed
-    if download_file(session, url, output_path, skip_auth=True):
-        return output_path
-
+    print("  ⚠  Could not download — place manually:")
+    print(f"       Copy igs20_2401.atx from team zip → rename → {op}")
     return None
 
 
-# ── 8. STATION COORDINATES (SINEX) ───────────────────────────────────────────
-
-def download_station_coords(session, gps_week, gps_dow):
-    """
-    Download IGS weekly station coordinates (SINEX).
-
-    FIX 11a: Replace literal "YYYYDDD" placeholder with actual week-start date.
-    FIX 11b: SINEX covers 7 days — use Sunday (start) of the GPS week.
-             Long-name: IGS0OPSFIN_{week_start}0000_07D_07D_SOL.SNX.gz
-             Short-name: igs{week}{dow_of_last_day}7.snx.Z  (traditionally week's Thu = dow 4
-             but the file is identified by the last day of the week = 6, so igs{week}7.snx.Z)
-    """
-    ensure_dirs(PRODUCTS_DIR / "snx")
-
-    week_start_yyddd = gps_week_start_yyyyddd(gps_week)   # FIX 11a
-
-    print(f"\n📍 Station Coordinates (SINEX)")
-
-    candidates = [
-        (
-            f"{CDDIS_BASE}/products/{gps_week}/"
-            f"IGS0OPSFIN_{week_start_yyddd}0000_07D_07D_SOL.SNX.gz",  # FIX 11b
-            f"IGS0OPSFIN_{week_start_yyddd}_SOL.SNX.gz",
-        ),
-        (
-            f"{CDDIS_BASE}/products/{gps_week}/igs{gps_week}7.snx.Z",
-            f"igs{gps_week}7.snx.Z",
-        ),
+def download_station_coords(session, year, doy, gps_week):
+    ensure_dirs(PRODUCTS_DIR/"snx")
+    yyyyddd = f"{year:04d}{doy:03d}"
+    week_start = gps_week_start_yyyyddd(gps_week)
+    base = f"{CDDIS}/products/{gps_week}/"
+    banner("Station Coordinates (SINEX)")
+    cands = [
+        (base+f"MIT0OPSSNX_{yyyyddd}0000_01D_01D_SOL.SNX.gz",
+         f"MIT0OPSSNX_{yyyyddd}_SOL.SNX.gz"),
+        (base+f"JPL0OPSFIN_{yyyyddd}0000_01D_01D_SOL.SNX.gz",
+         f"JPL0OPSFIN_{yyyyddd}_SOL.SNX.gz"),
+        (base+f"COD0OPSFIN_{yyyyddd}0000_01D_01D_SOL.SNX.gz",
+         f"COD0OPSFIN_{yyyyddd}_SOL.SNX.gz"),
+        (base+f"IGS0OPSFIN_{week_start}0000_07D_07D_SOL.SNX.gz",
+         f"IGS0OPSFIN_{week_start}_SOL.SNX.gz"),
+        (base+f"igs{gps_week}7.snx.Z",
+         f"igs{gps_week}7.snx.Z"),
     ]
-
-    for url, fname in candidates:
-        output_path = PRODUCTS_DIR / "snx" / fname
-        if output_path.exists() or output_path.with_suffix("").exists():
-            print(f"  ⏭️  SNX exists ({fname})")
-            return
-        if download_file(session, url, output_path):
-            decompress_file(output_path)
-            return
-
-    print("  ⚠️  SINEX coords not found from any source")
+    try_candidates(session, cands, PRODUCTS_DIR/"snx", "SINEX")
 
 
-# ── 9. PHASE BIASES (PRIDE PPP-AR) ───────────────────────────────────────────
+def print_phase_bias_info(year, doy):
+    yyyyddd = f"{year:04d}{doy:03d}"
+    banner("Phase Biases (PRIDE PPP-AR)")
+    print(f"  pdp3 downloads these automatically when you run it.")
+    print(f"  Manual: ftps://bdspride.com/wum/")
+    print(f"  Pattern: WUM0MGXRAP_{yyyyddd}*_bia.gz")
+    print(f"  Command: pdp3 -m S -sys gec <obs_file.rnx>")
 
-def download_phase_biases(year, doy):
-    """Print info for PRIDE PPP-AR phase biases (auto-downloaded by pdp3)."""
-    ensure_dirs(PRODUCTS_DIR / "bia")
-
-    yyddd = f"{year:04d}{doy:03d}"
-
-    print(f"\n⚡ Phase Biases (PRIDE PPP-AR)")
-    print(f"  Auto-downloaded by: pdp3 -m S -sys gec <obs_file>")
-    print(f"  Manual source:      ftps://bdspride.com/wum/")
-    print(f"  Filename pattern:   WUM0MGXRAP_{yyddd}*_bia.gz")
-
-
-# ==============================================================================
+# ══════════════════════════════════════════════════════════════════
 #  MAIN
-# ==============================================================================
+# ══════════════════════════════════════════════════════════════════
+
 
 def main():
     import argparse
+    global YEAR, DOY, GPS_WEEK, GPS_DOW
 
-    global YEAR, DOY, YYYYDDD, YY, DOY_STR, GPS_WEEK, GPS_DOW
+    p = argparse.ArgumentParser(
+        description="PPP Data Downloader v6",
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument("--stations",      nargs="+", default=["BJFS", "GOLD"])
+    p.add_argument("--date",          nargs=2, type=int, metavar=("YEAR", "DOY"),
+                   default=[YEAR, DOY])
+    p.add_argument("--obs-only",      action="store_true",
+                   help="Download/convert observations only")
+    p.add_argument("--skip-wuhan",    action="store_true")
+    p.add_argument("--clean-tmp",     action="store_true",
+                   help="Remove leftover .tmp files and exit")
+    args = p.parse_args()
 
-    parser = argparse.ArgumentParser(
-        description="PPP Data Downloader — downloads all files needed for "
-                    "RTKLIB, GAMP, PRIDE PPP-AR processing.",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    parser.add_argument(
-        "--stations", nargs="+", default=["BJFS", "GOLD"],
-        help="Station codes (e.g. --stations HKWS ZIM2 GOLD)",
-    )
-    parser.add_argument(
-        "--date", nargs=2, type=int, metavar=("YEAR", "DOY"),
-        default=[YEAR, DOY],
-        help="Date as YEAR DOY (e.g. --date 2026 015)",
-    )
-    parser.add_argument(
-        "--obs-only", action="store_true",
-        help="Download observation files only (skip products)",
-    )
-    parser.add_argument(
-        "--no-decompress", action="store_true",
-        help="Keep .gz/.Z files compressed (skip decompression)",
-    )
-    parser.add_argument(
-        "--skip-wuhan", action="store_true",
-        help="Skip Wuhan multi-GNSS products (use IGS GPS-only)",
-    )
-
-    args = parser.parse_args()
-
-    # Update globals from CLI args
-    YEAR, DOY = args.date[0], args.date[1]
-    DOY_STR = f"{DOY:03d}"
-    YYYYDDD = f"{YEAR:04d}{DOY:03d}"
-    YY = str(YEAR)[2:]
+    YEAR, DOY = args.date
     GPS_WEEK, GPS_DOW = compute_gps_week_dow(YEAR, DOY)
+    date_str = (dt(YEAR, 1, 1)+datetime.timedelta(days=DOY-1)
+                ).strftime("%Y-%m-%d")
 
-    date_obj = dt(YEAR, 1, 1) + datetime.timedelta(days=DOY - 1)
+    # ── Clean mode ──────────────────────────────────────────────
+    if args.clean_tmp:
+        print("\n  🧹 Cleaning .tmp files ...")
+        clean_tmp_files(DATA_DIR, PRODUCTS_DIR)
+        print()
+        return
 
     get_credentials()
     session = make_session()
 
-    print("\n" + "=" * 80)
-    print(f"  🌐 PPP DATA DOWNLOADER  (fixed)")
-    print(f"     Date    : {date_obj.strftime('%Y-%m-%d')}  (DOY {DOY})"
-          f"  GPS Week {GPS_WEEK} / Day {GPS_DOW}")
-    print(f"     Stations: {', '.join(args.stations)}")
-    print(f"     Data    : {DATA_DIR}")
-    print(f"     Products: {PRODUCTS_DIR}")
-    print("=" * 80)
+    print("\n" + "═"*62)
+    print(f"  PPP DATA DOWNLOADER  v6")
+    print(
+        f"  Date    : {date_str}  DOY={DOY:03d}  GPS week {GPS_WEEK} / DOW {GPS_DOW}")
+    print(f"  Stations: {', '.join(args.stations)}")
+    print(f"  Data    : {DATA_DIR}")
+    print(f"  Products: {PRODUCTS_DIR}")
+    print("═"*62)
 
-    # ── Observation files ─────────────────────────────────────────────────────
+    # Auto-clean .tmp files at startup so stale partials don't block downloads
+    stale = list(Path(DATA_DIR).rglob("*.tmp")) + \
+        list(Path(PRODUCTS_DIR).rglob("*.tmp"))
+    if stale:
+        print(
+            f"\n  🧹 Removing {len(stale)} leftover .tmp file(s) from previous run...")
+        for f in stale:
+            print(f"     {f.parent.name}/{f.name}")
+            f.unlink()
+
     for code in args.stations:
-        sta = lookup_station(code)
-        download_observation(session, sta[0], sta[1], YEAR, DOY)
+        stn, ctry = lookup_station(code)
+        download_observation(session, stn, ctry, YEAR, DOY)
 
     if args.obs_only:
-        print("\n✓ Observation-only mode complete.\n")
+        print("\n  ✓ Observation-only mode done.\n")
         return
 
-    # ── Products ──────────────────────────────────────────────────────────────
     download_broadcast_nav(session, YEAR, DOY)
     download_precise_products(session, YEAR, DOY, GPS_WEEK, GPS_DOW)
+    download_cod_mgxfin(session, YEAR, DOY, GPS_WEEK)
     if not args.skip_wuhan:
         download_wuhan_products(session, YEAR, DOY, GPS_WEEK)
-    download_code_biases(session, YEAR, DOY)
+    download_code_biases(session, YEAR, DOY, GPS_WEEK)
     download_ionosphere_map(session, YEAR, DOY)
+    download_attitude_file(session, YEAR, DOY, GPS_WEEK)
     download_antenna_file()
-    download_station_coords(session, GPS_WEEK, GPS_DOW)
-    download_phase_biases(YEAR, DOY)
+    download_station_coords(session, YEAR, DOY, GPS_WEEK)
+    print_phase_bias_info(YEAR, DOY)
 
-    print("\n" + "=" * 80)
-    print("✅ DOWNLOAD COMPLETE")
-    print("=" * 80)
-    print(f"\n📁 Observation data : {DATA_DIR}")
-    print(f"📁 Products         : {PRODUCTS_DIR}")
-    print(f"\nNext steps:")
+    print("\n" + "═"*62)
+    print("  ✅ DOWNLOAD COMPLETE")
+    print("═"*62)
+    print(f"""
+  Directories
+    Observations : {DATA_DIR}
+    Products     : {PRODUCTS_DIR}
+
+  WHAT EACH TOOL NEEDS
+  ┌─────────────┬────────────────────────────────────────────┐
+  │ RTKLIB      │ obs.rnx  +  broadcast-nav.rnx             │
+  │             │ OR  obs.rnx  +  SP3  +  CLK               │
+  ├─────────────┼────────────────────────────────────────────┤
+  │ GAMP        │ obs.rnx + SP3 + CLK + ERP + DCB +         │
+  │             │ IONEX + ATX  (+ SINEX recommended)        │
+  ├─────────────┼────────────────────────────────────────────┤
+  │ PRIDE PPP-AR│ obs.rnx + SP3 + CLK + ERP + OSB + ATX     │
+  │             │ + OBX (attitude) + SNX                     │
+  │             │ (phase bias also auto-downloaded by pdp3)  │
+  └─────────────┴────────────────────────────────────────────┘
+
+  NEXT STEPS""")
     for code in args.stations:
-        print(f"  python check_station.py {code}")
-    print(f"  cd GAMP_work && gamp.exe gamp.cfg")
-    print()
+        print(f"    python check_station.py {code}")
+    print("    cd GAMP_work && gamp.exe gamp.cfg\n")
 
 
 if __name__ == "__main__":

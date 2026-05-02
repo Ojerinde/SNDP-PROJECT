@@ -72,12 +72,12 @@ It has a graphical interface and can process stored data files (post-processing)
 
 ---
 
-### Tool 2: RTKLIB-demo (enhanced version — `C:\Program Files\RTKLIB-demo`)
+### Tool 2: RTKLIB-EX 2.5.0 (enhanced version — `C:\Program Files\RTKLIB_EX_2.5.0`)
 
-**What it is:** A community-improved fork of RTKLIB, optimized especially for
-low-cost u-blox receivers. Same GUI apps, but with better algorithms for PPP.
-The actual binary executables you run are in `C:\Program Files\RTKLIB\bin\`
-(both RTKLIB and RTKLIB-demo install to the same bin folder).
+**What it is:** RTKLIB-EX (formerly called "demo5") is a community-improved fork of RTKLIB,
+developed by rtklibexplorer. Same GUI apps as stock RTKLIB, but with better PPP algorithms.
+**Already installed:** executables are in `C:\Program Files\RTKLIB_EX_2.5.0\`
+(rtkpost.exe, rtkplot.exe, rtkconv.exe, rnx2rtkp.exe, etc. — Help → About shows "RTKLIB-EX 2.5.0").
 
 ---
 
@@ -1212,5 +1212,952 @@ Replace YYYY=2024, DDD=100, WWWW=2310, WD=2 with your actual dates.
 
 ---
 
-_Guide prepared for PPP research project. Tools: RTKLIB demo5, GAMP v2, PRIDE PPP-AR v3.2_
+_Guide prepared for PPP research project. Tools: RTKLIB stock 2.4.3, RTKLIB-EX 2.5.0, GAMP v2, PRIDE PPP-AR v3.2_
 _Data sources: IGS/CDDIS, Wuhan University (WUM), CODE, CAS_
+
+---
+
+<div style="border-left: 5px solid #e53e3e; background: #fff5f5; padding: 1px 20px; margin: 10px 0">
+
+## PART 13 — Product File Naming Conventions 🔴
+
+> This section explains what every part of a product filename means and why you have
+> multiple files that appear to do the same thing.
+
+### Why Are There Multiple SP3/CLK Files?
+
+After running the download script you ended up with **3 SP3 files** and **3 CLK files**.
+This is normal and intentional — they come from different analysis centers and cover
+different satellite systems. Here is exactly what each one is:
+
+| File (SP3)                               | Size   | Center             | Systems Covered      | Delay    | Use for                       |
+| ---------------------------------------- | ------ | ------------------ | -------------------- | -------- | ----------------------------- |
+| `COD0OPSFIN_2026015_ORB.SP3`             | 1.4 MB | CODE (Switzerland) | GPS + GLONASS only   | ~2 weeks | GPS/GLONASS PPP               |
+| `COD0MGXFIN_20260150000_01D_05M_ORB.SP3` | 2.1 MB | CODE MGEX          | GPS+GLO+GAL+BDS+QZSS | ~2 weeks | **Multi-GNSS PPP (Best)**     |
+| `WUM0MGXRAP_20260150000_01D_05M_ORB.SP3` | 1.9 MB | Wuhan Univ.        | GPS+GLO+GAL+BDS+QZSS | ~2 days  | Multi-GNSS when FIN not ready |
+
+| File (CLK)                               | Size  | Systems              | Quality                                |
+| ---------------------------------------- | ----- | -------------------- | -------------------------------------- |
+| `IGS0OPSFIN_2026015_CLK.CLK`             | 12 MB | GPS + GLONASS        | IGS combined, highest GPS/GLO accuracy |
+| `COD0MGXFIN_20260150000_01D_30S_CLK.CLK` | 35 MB | GPS+GLO+GAL+BDS+QZSS | Best for multi-GNSS                    |
+| `WUM0MGXRAP_20260150000_01D_30S_CLK.CLK` | 19 MB | GPS+GLO+GAL+BDS+QZSS | Rapid, good fallback                   |
+
+### Decoding the Filename Format
+
+Every modern IGS RINEX 3 product file follows this pattern:
+
+```
+COD0MGXFIN_20260150000_01D_05M_ORB.SP3
+│   │   │     │        │    │    │    └── Extension: SP3 (orbit), CLK (clock), ERP, BIA, OBX, INX
+│   │   │     │        │    │    └── Content code: ORB=orbit, CLK=clock, ATT=attitude
+│   │   │     │        │    └── Sample interval: 05M=5 minutes, 30S=30 seconds, 01D=1 day, 12H=12 hour
+│   │   │     │        └── Duration: 01D=1 day
+│   │   │     └── Start epoch: YYYY=2026, DDD=015, HH=00, mm=00, ss=00
+│   │   └── Solution type: FIN=Final (best), RAP=Rapid, ULT=Ultra-rapid
+│   └── Data source: MGX=Multi-GNSS, OPS=IGS Operations
+└── Analysis center: COD=CODE, WUM=Wuhan, IGS=Combined, EMR=NRCan, CAS=Chinese Acad.
+```
+
+### What FIN / RAP / ULT Mean
+
+| Code     | Full Name   | Published                  | Orbit Accuracy | Clock Accuracy |
+| -------- | ----------- | -------------------------- | -------------- | -------------- |
+| **FIN**  | Final       | ~2 weeks after observation | ~2–3 cm        | ~0.02–0.03 ns  |
+| **RAP**  | Rapid       | ~2 days after observation  | ~2.5 cm        | ~0.03 ns       |
+| **ULT**  | Ultra-rapid | 90 min after observation   | ~5 cm          | ~0.15 ns       |
+| _(none)_ | Broadcast   | Real-time                  | ~100 cm        | ~2–7 ns        |
+
+**For your research (2026-01-15 analysis today, May 2026):** You have Final products.
+This is the **best available quality** — equivalent to surveying-grade data.
+
+### Does "Fallback 3" Mean Inferior Data? — NO!
+
+In the download script, the numbering (Priority 1, Fallback 3) refers only to the
+**order the script tries them**, not the quality of the data.
+
+- **`IGS0OPSFIN`** — Tries first. But it covers GPS+GLONASS ONLY.
+- **`COD0OPSFIN`** — Tries second. Also GPS+GLONASS only.
+- **`COD0MGXFIN`** — Was labeled "Fallback 3" in the table. But for **multi-GNSS PPP
+  (GPS + Galileo + BeiDou + QZSS)**, `COD0MGXFIN` is actually the **BEST product**
+  because it is the only Final product that includes all 5 constellations.
+
+The script stopped at `COD0OPSFIN` for the GPS/GLONASS products. `COD0MGXFIN` was
+separately downloaded from your team member's zip and is now in `products/sp3/` and
+`products/clk/`.
+
+### ATX Files — Which One to Use
+
+| File                       | Size                                  | Validity                        |
+| -------------------------- | ------------------------------------- | ------------------------------- |
+| `igs20.atx` (52.7 MB)      | Downloaded fresh from `files.igs.org` | Current, covers all IGS20 epoch |
+| `igs20_2401.atx` (48.6 MB) | Team's copy from GPS week 2401        | Slightly older version          |
+
+**Use `igs20.atx`** (the larger one) for all processing. `igs20_2401.atx` can be kept
+as a backup but is not needed. These are NOT the same file — `igs20.atx` is always
+the most current release; `igs20_2401.atx` was the version released during GPS week 2401.
+
+</div>
+
+---
+
+<div style="border-left: 5px solid #e53e3e; background: #fff5f5; padding: 1px 20px; margin: 10px 0">
+
+## PART 14 — Your Complete 2026-01-15 File Inventory 🔴
+
+> Do you need to rerun the download script? **No** — you have everything needed for
+> all four tools. This table shows exactly what you have and what each file is for.
+
+### Observation Files (`C:\PPP_PROJECT\data\`)
+
+| File                                     | Size    | Description                                          |
+| ---------------------------------------- | ------- | ---------------------------------------------------- |
+| `HKWS00HKG_R_20260150000_01D_30S_MO.rnx` | 22.3 MB | HKWS station, Hong Kong, 30-second sampling, 24h     |
+| `ZIM200CHE_R_20260150000_01D_30S_MO.rnx` | 35.7 MB | ZIM2 station, Zimmerwald Switzerland, 30-second, 24h |
+
+### Product Files (`C:\PPP_PROJECT\products\`)
+
+**`products/sp3/` — Precise Satellite Orbits**
+
+| File                                     | Size   | Systems       | Use With                              |
+| ---------------------------------------- | ------ | ------------- | ------------------------------------- |
+| `COD0OPSFIN_2026015_ORB.SP3`             | 1.4 MB | GPS + GLONASS | RTKLIB GPS/GLO comparison runs        |
+| `COD0MGXFIN_20260150000_01D_05M_ORB.SP3` | 2.1 MB | G+R+E+C+J     | GAMP multi-GNSS, RTKLIB-EX multi-GNSS |
+| `WUM0MGXRAP_20260150000_01D_05M_ORB.SP3` | 1.9 MB | G+R+E+C+J     | PRIDE PPP-AR (pdp3 auto-places this)  |
+
+**`products/clk/` — Precise Satellite Clocks**
+
+| File                                     | Size    | Systems       | Use With                                       |
+| ---------------------------------------- | ------- | ------------- | ---------------------------------------------- |
+| `IGS0OPSFIN_2026015_CLK.CLK`             | 12.0 MB | GPS + GLONASS | RTKLIB GPS/GLO runs (pair with COD0OPSFIN SP3) |
+| `COD0MGXFIN_20260150000_01D_30S_CLK.CLK` | 35.3 MB | G+R+E+C+J     | **GAMP multi-GNSS (pair with COD0MGXFIN SP3)** |
+| `WUM0MGXRAP_20260150000_01D_30S_CLK.CLK` | 19.0 MB | G+R+E+C+J     | PRIDE PPP-AR, RTKLIB-EX multi-GNSS fallback    |
+
+<div style="background: #fffde7; border-left: 5px solid #f9a825; padding: 10px 16px; margin: 8px 0; border-radius: 4px">
+💡 <strong>SP3 and CLK must always come from the SAME analysis center!</strong>
+Mixing COD0OPSFIN SP3 with WUM CLK causes centimeter-level inconsistencies because
+each center uses its own reference frame and clock datum. Always pair:
+COD0OPSFIN SP3 + IGS0OPSFIN CLK, OR COD0MGXFIN SP3 + COD0MGXFIN CLK, OR WUM SP3 + WUM CLK.
+</div>
+
+**`products/erp/` — Earth Rotation Parameters**
+
+| File                                     | Bytes | Use With                                  |
+| ---------------------------------------- | ----- | ----------------------------------------- |
+| `COD0MGXFIN_20260150000_01D_12H_ERP.ERP` | 1,631 | **GAMP** (most complete, covers all GNSS) |
+| `EMR0OPSFIN_2026015_ERP.ERP`             | 340   | RTKLIB GPS/GLO runs                       |
+| `WUM0MGXRAP_20260150000_01D_01D_ERP.ERP` | 468   | **PRIDE PPP-AR** (pdp3 uses WUM products) |
+
+<div style="background: #fffde7; border-left: 5px solid #f9a825; padding: 10px 16px; margin: 8px 0; border-radius: 4px">
+💡 <strong>ERP files are tiny text files (~300–1600 bytes)</strong> — the small size is normal.
+They contain only a table of Earth Orientation Parameter values (X/Y polar motion, UT1-UTC)
+for each day of the week. The actual values fit in one page of text.
+</div>
+
+**`products/bia/` — Phase/Code Biases**
+
+| File                                     | Size   | Type                           | Use With                                      |
+| ---------------------------------------- | ------ | ------------------------------ | --------------------------------------------- |
+| `WUM0MGXRAP_20260150000_01D_01D_OSB.BIA` | 536 KB | Observable-Specific Bias (OSB) | **PRIDE PPP-AR** — phase biases needed for AR |
+| `COD0MGXFIN_20260150000_01D_01D_OSB.BIA` | 749 KB | Observable-Specific Bias (OSB) | Alternative OSB for GAMP UC12 mode            |
+
+**`products/dcb/`**
+
+| File                         | Size   | Type                   | Use With                                      |
+| ---------------------------- | ------ | ---------------------- | --------------------------------------------- |
+| `CAS0OPSRAP_2026015_DCB.BIA` | 614 KB | Differential Code Bias | **GAMP** — required for ionosphere correction |
+
+**`products/ionex/`**
+
+| File                         | Size    | Use With                           |
+| ---------------------------- | ------- | ---------------------------------- |
+| `COD0OPSFIN_2026015_GIM.INX` | 1.62 MB | GAMP ionoopt=5, RTKLIB single-freq |
+
+**`products/atx/`**
+
+| File             | Size    | Use With                                         |
+| ---------------- | ------- | ------------------------------------------------ |
+| `igs20.atx`      | 52.7 MB | **ALL TOOLS** — antenna phase center corrections |
+| `igs20_2401.atx` | 48.6 MB | Backup (not needed, team copy)                   |
+
+**`products/obx/`**
+
+| File                                     | Size    | Use With                                          |
+| ---------------------------------------- | ------- | ------------------------------------------------- |
+| `COD0MGXFIN_20260150000_01D_30S_ATT.OBX` | 35.0 MB | **PRIDE PPP-AR** — satellite attitude quaternions |
+
+**`products/nav/`**
+
+| File                                 | Size    | Use With                              |
+| ------------------------------------ | ------- | ------------------------------------- |
+| `BRD400DLR_S_20260150000_01D_MN.rnx` | 12.0 MB | **All tools** — primary broadcast nav |
+| `BRDC00IGS_R_20260150000_01D_MN.rnx` | 12.0 MB | Backup (equivalent to BRD400DLR)      |
+
+**`products/snx/`**
+
+| File                         | Size    | Use With                                             |
+| ---------------------------- | ------- | ---------------------------------------------------- |
+| `MIT0OPSSNX_2026015_SOL.SNX` | 29.1 MB | GAMP + reference coordinates for accuracy evaluation |
+
+</div>
+
+---
+
+<div style="border-left: 5px solid #e53e3e; background: #fff5f5; padding: 1px 20px; margin: 10px 0">
+
+## PART 15 — STEP-BY-STEP: RTKLIB-EX 2.5.0 (formerly "demo5") 🔴
+
+### What Is RTKLIB-EX and How Is It Different from RTKLIB?
+
+**RTKLIB-EX** (previously named "demo5") is a community-maintained enhanced version of RTKLIB
+developed by rtklibexplorer. It has the same GUI applications (rtkpost, rtkplot, rtkconv, etc.)
+but with significantly improved algorithms especially for:
+
+- PPP with ambiguity resolution (better than stock RTKLIB)
+- Improved carrier-phase processing
+- Better cycle-slip detection
+- Improved multi-constellation support
+
+**Already installed** at: `C:\Program Files\RTKLIB_EX_2.5.0\`
+Executables: rtkpost.exe, rtkplot.exe, rtkconv.exe, rnx2rtkp.exe, convbin.exe, crx2rnx.exe, rtkget.exe, etc.
+Also includes: `igs20_2353.atx` (antenna calibration file), `manual_demo5.pdf`, sample config files.
+
+<div style="background: #e8f5e9; border-left: 5px solid #4caf50; padding: 10px 16px; margin: 8px 0; border-radius: 4px">
+✅ <strong>No download needed.</strong> RTKLIB-EX 2.5.0 is already extracted and ready.
+To verify: Help → About in rtkpost.exe shows "RTKLIB-EX 2.5.0".
+Note: <code>C:\Program Files\RTKLIB-demo</code> contains <em>source code only</em> and can be deleted.
+</div>
+
+### Step 1 — Open RTKLIB-EX rtkpost
+
+Double-click: `C:\Program Files\RTKLIB_EX_2.5.0\rtkpost.exe`
+
+The window looks identical to stock RTKLIB but the Options dialog has additional
+settings that are not available in stock RTKLIB.
+
+### Step 3 — Load Input Files
+
+In the RTKLIB-EX rtkpost window:
+
+**RINEX OBS (Rover):**
+
+```
+C:\PPP_PROJECT\data\HKWS00HKG_R_20260150000_01D_30S_MO.rnx
+```
+
+(or ZIM2 for the second station)
+
+**RINEX NAV/CLK:** (broadcast nav — used only for SPP fallback, not for PPP with precise products)
+
+```
+C:\PPP_PROJECT\products\nav\BRD400DLR_S_20260150000_01D_MN.rnx
+```
+
+**SP3/CLK** — Click the `+` button to add files. Add BOTH the SP3 and CLK:
+
+```
+C:\PPP_PROJECT\products\sp3\COD0MGXFIN_20260150000_01D_05M_ORB.SP3
+C:\PPP_PROJECT\products\clk\COD0MGXFIN_20260150000_01D_30S_CLK.CLK
+```
+
+**Output File:**
+
+```
+C:\PPP_PROJECT\results\HKWS_RTKLIBEX_multiGNSS.pos
+```
+
+### Step 4 — Configure Options (RTKLIB-EX-specific settings)
+
+Click **Options**:
+
+#### Tab: Setting 1
+
+| Parameter           | Value                        | Why                                               |
+| ------------------- | ---------------------------- | ------------------------------------------------- |
+| Positioning Mode    | `PPP-Static`                 | Static station, fastest convergence               |
+| Frequencies         | `L1+L2`                      | Dual-frequency to eliminate ionosphere            |
+| Filter Type         | `Forward`                    | Standard forward Kalman filter                    |
+| Elevation Mask      | `10 deg`                     | RTKLIB-EX handles low-elevation better than stock |
+| Satellite Ephemeris | `Precise`                    | Use the SP3+CLK files loaded above                |
+| Satellite System    | Tick GPS ✓ GLO ✓ GAL ✓ BDS ✓ | Enable all constellations                         |
+
+#### Tab: Setting 2 (RTKLIB-EX extra options)
+
+| Parameter                   | Value    | Why                                               |
+| --------------------------- | -------- | ------------------------------------------------- |
+| Integer Ambiguity Res (GPS) | `PPP-AR` | **Key RTKLIB-EX feature** — fixes GPS ambiguities |
+| Min Fix Count               | `10`     | Must track ≥10 epochs before attempting fix       |
+| Min Hold Count              | `10`     | Must hold fix for ≥10 epochs                      |
+
+#### Tab: Files
+
+| Field                          | File                                                                 |
+| ------------------------------ | -------------------------------------------------------------------- |
+| Satellite/Rcvr Antenna PCO/PCV | `C:\PPP_PROJECT\products\atx\igs20.atx`                              |
+| Earth Rotation Parameters      | `C:\PPP_PROJECT\products\erp\COD0MGXFIN_20260150000_01D_12H_ERP.ERP` |
+| Ionosphere (IONEX)             | `C:\PPP_PROJECT\products\ionex\COD0OPSFIN_2026015_GIM.INX`           |
+| DCB                            | `C:\PPP_PROJECT\products\dcb\CAS0OPSRAP_2026015_DCB.BIA`             |
+
+### Step 5 — Run and View Results
+
+1. Click **Execute** (bottom right)
+2. Processing takes 1–3 minutes for 24h of 30-second data
+3. Open rtkplot.exe → File → Open Solution → select your `.pos` output file
+4. View → Plot Type → Position — watch convergence
+
+### Step 6 — Research Comparison Runs for RTKLIB-EX
+
+Run four times saving separate outputs:
+
+| Run | Mode          | SP3+CLK                 | GNSS        | navsys setting | Output                        |
+| --- | ------------- | ----------------------- | ----------- | -------------- | ----------------------------- |
+| 1   | PPP-Static    | COD0OPSFIN + IGS0OPSFIN | GPS only    | GPS ✓          | `HKWS_RTKLIBEX_GPS.pos`       |
+| 2   | PPP-Static    | COD0MGXFIN + COD0MGXFIN | GPS+GAL     | GPS✓ GAL✓      | `HKWS_RTKLIBEX_GE.pos`        |
+| 3   | PPP-Static    | COD0MGXFIN + COD0MGXFIN | GPS+GAL+BDS | GPS✓ GAL✓ BDS✓ | `HKWS_RTKLIBEX_GEC.pos`       |
+| 4   | PPP-Kinematic | COD0MGXFIN + COD0MGXFIN | GPS+GAL+BDS | GPS✓ GAL✓ BDS✓ | `HKWS_RTKLIBEX_kinematic.pos` |
+
+</div>
+
+---
+
+<div style="border-left: 5px solid #e53e3e; background: #fff5f5; padding: 1px 20px; margin: 10px 0">
+
+## PART 16 — Complete File Requirements Per Tool (With Reasons) 🔴
+
+> This is the master reference. For each tool, every file is listed with its
+> required/recommended/optional status AND the specific filename from your
+> `C:\PPP_PROJECT\products\` folder.
+
+---
+
+### Tool 1: RTKLIB (rtkpost.exe) — `C:\Program Files\RTKLIB\bin\`
+
+| File Type             | Status               | Your Specific File                                                                                      | Why Needed                                                        |
+| --------------------- | -------------------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Observation (.rnx)    | **REQUIRED**         | `data\HKWS00HKG_R_20260150000_01D_30S_MO.rnx`                                                           | Your raw measurements                                             |
+| Broadcast Nav (.rnx)  | **REQUIRED**         | `products\nav\BRD400DLR_S_20260150000_01D_MN.rnx`                                                       | Needed even with precise products for initial orbit approximation |
+| Precise Orbit (.sp3)  | **REQUIRED for PPP** | `products\sp3\COD0OPSFIN_2026015_ORB.SP3` (GPS/GLO) OR `products\sp3\WUM0MGXRAP_*_ORB.SP3` (multi-GNSS) | Replaces broadcast orbit; 100× more accurate                      |
+| Precise Clock (.clk)  | **REQUIRED for PPP** | `products\clk\IGS0OPSFIN_2026015_CLK.CLK` (GPS/GLO) OR `products\clk\WUM0MGXRAP_*_CLK.CLK` (multi-GNSS) | Must match SP3 center; eliminates ~30 cm/ns clock errors          |
+| Antenna ATX (.atx)    | **REQUIRED**         | `products\atx\igs20.atx`                                                                                | Without this, height error ~2–5 cm systematic                     |
+| Earth Rotation (.erp) | RECOMMENDED          | `products\erp\EMR0OPSFIN_2026015_ERP.ERP`                                                               | RTKLIB reads via Files tab; corrects Earth orientation            |
+| IONEX (.inx)          | RECOMMENDED          | `products\ionex\COD0OPSFIN_2026015_GIM.INX`                                                             | Critical for single-frequency; improves dual-freq convergence     |
+| DCB (.bia)            | RECOMMENDED          | `products\dcb\CAS0OPSRAP_2026015_DCB.BIA`                                                               | Reduces code bias errors 0.5–2 m                                  |
+| SINEX (.snx)          | Optional             | `products\snx\MIT0OPSSNX_2026015_SOL.SNX`                                                               | RTKLIB doesn't use SNX directly; use for external verification    |
+
+**How RTKLIB receives product files:**
+
+- SP3+CLK: via the `+` button in the main window
+- ATX, ERP, IONEX, DCB: via Options → Files tab (separate fields for each)
+- Nav: second input field in main window
+
+---
+
+### Tool 2: RTKLIB-EX 2.5.0 — `C:\Program Files\RTKLIB_EX_2.5.0\rtkpost.exe`
+
+Same file types as RTKLIB, but with better SP3+CLK combination for multi-GNSS:
+
+| File Type          | Status       | Your Specific File                                    | Difference from RTKLIB                                          |
+| ------------------ | ------------ | ----------------------------------------------------- | --------------------------------------------------------------- |
+| Observation (.rnx) | **REQUIRED** | Same as RTKLIB                                        | Same                                                            |
+| Broadcast Nav      | **REQUIRED** | Same as RTKLIB                                        | Same                                                            |
+| SP3                | **REQUIRED** | `products\sp3\COD0MGXFIN_20260150000_01D_05M_ORB.SP3` | **Use COD0MGXFIN** — RTKLIB-EX PPP-AR needs multi-GNSS products |
+| CLK                | **REQUIRED** | `products\clk\COD0MGXFIN_20260150000_01D_30S_CLK.CLK` | **Use COD0MGXFIN** — must match SP3 center                      |
+| ATX                | **REQUIRED** | `products\atx\igs20.atx`                              | Same                                                            |
+| ERP                | RECOMMENDED  | `products\erp\COD0MGXFIN_20260150000_01D_12H_ERP.ERP` | **Use COD0MGXFIN ERP** to match orbit center                    |
+| IONEX              | RECOMMENDED  | `products\ionex\COD0OPSFIN_2026015_GIM.INX`           | Same                                                            |
+| DCB                | RECOMMENDED  | `products\dcb\CAS0OPSRAP_2026015_DCB.BIA`             | Same                                                            |
+
+---
+
+### Tool 3: GAMP — `C:\Program Files (x86)\GAMP\GAMP\bin\Windows\gamp.exe`
+
+<div style="background: #fffde7; border-left: 5px solid #f9a825; padding: 10px 16px; margin: 8px 0; border-radius: 4px">
+💡 <strong>GAMP's critical difference:</strong> ALL product files must be in the SAME FOLDER as
+the observation file. GAMP auto-detects them by file extension and naming pattern.
+There is no separate file-path configuration for each product — GAMP scans the folder.
+Create a dedicated working folder like <code>C:\PPP_PROJECT\GAMP_work\2026015\</code>
+and copy all needed files there.
+</div>
+
+| File Type            | Status            | Your Specific File                       | Config Parameter                     |
+| -------------------- | ----------------- | ---------------------------------------- | ------------------------------------ |
+| Observation (.rnx)   | **REQUIRED**      | `HKWS00HKG_R_20260150000_01D_30S_MO.rnx` | `obs file/folder`                    |
+| Broadcast Nav (.rnx) | **REQUIRED**      | `BRD400DLR_S_20260150000_01D_MN.rnx`     | Auto-detected by .rnx extension      |
+| SP3                  | **REQUIRED**      | `COD0MGXFIN_20260150000_01D_05M_ORB.SP3` | Auto-detected by .SP3 extension      |
+| CLK                  | **REQUIRED**      | `COD0MGXFIN_20260150000_01D_30S_CLK.CLK` | Auto-detected by .CLK extension      |
+| ERP                  | **REQUIRED**      | `COD0MGXFIN_20260150000_01D_12H_ERP.ERP` | Auto-detected by .ERP extension      |
+| DCB/OSB              | **REQUIRED**      | `CAS0OPSRAP_20260150000_01D_01D_DCB.BIA` | Auto-detected by .BIA/.BSX extension |
+| IONEX                | Req. if ionoopt=5 | `COD0OPSFIN_2026015_GIM.INX`             | Auto-detected by .INX/.I extension   |
+| ATX                  | **REQUIRED**      | `igs20.atx`                              | Auto-detected by .atx extension      |
+| SINEX (.snx)         | RECOMMENDED       | `MIT0OPSSNX_2026015_SOL.SNX`             | Auto-detected by .SNX extension      |
+| Ocean Loading        | Optional          | `ocnload.blq`                            | Auto-detected (only if present)      |
+
+**GAMP Config Parameters for Multi-GNSS PPP Static:**
+
+```ini
+obs file/folder = 1
+               = C:\PPP_PROJECT\GAMP_work\2026015
+posmode        = 7          # 7=PPP static (6=kinematic)
+navsys         = 45         # 1+4+8+32 = GPS+GLONASS+Galileo+BDS (45 = all)
+ionoopt        = 4          # 4=UC12 (uncombined dual-freq, best for multi-GNSS)
+tropopt        = 3          # 3=ZTD estimation (estimate troposphere)
+tidecorr       = 7          # 7=all tides (solid+ocean+pole)
+outdir         = result
+```
+
+<div style="background: #fffde7; border-left: 5px solid #f9a825; padding: 10px 16px; margin: 8px 0; border-radius: 4px">
+💡 <strong>GAMP navsys bit flags explained:</strong><br>
+<code>navsys = 1</code> → GPS only<br>
+<code>navsys = 5</code> → GPS(1) + GLONASS(4) = 5<br>
+<code>navsys = 13</code> → GPS(1) + GLONASS(4) + Galileo(8) = 13<br>
+<code>navsys = 45</code> → GPS(1) + GLONASS(4) + Galileo(8) + BDS(32) = 45<br>
+<code>navsys = 61</code> → GPS(1)+GLONASS(4)+Galileo(8)+QZSS(16)+BDS(32) = 61
+</div>
+
+---
+
+### Tool 4: PRIDE PPP-AR — `C:\Program Files (x86)\PRIDE-PPPAR-master\`
+
+PRIDE auto-downloads WUM products when you run pdp3. For 2026-01-15 (GPS week 2401,
+which is ≥ 2290), pdp3 will successfully download from multiple servers including IGN.
+You can also pre-place products to avoid any download failures.
+
+| File Type          | Status              | Specific File                            | How PRIDE Gets It                     |
+| ------------------ | ------------------- | ---------------------------------------- | ------------------------------------- |
+| Observation (.rnx) | **REQUIRED**        | `HKWS00HKG_R_20260150000_01D_30S_MO.rnx` | You specify on command line           |
+| SP3                | **REQUIRED**        | `WUM0MGXRAP_20260150000_01D_05M_ORB.SP3` | pdp3 auto-downloads OR pre-place      |
+| CLK                | **REQUIRED**        | `WUM0MGXRAP_20260150000_01D_30S_CLK.CLK` | pdp3 auto-downloads OR pre-place      |
+| OSB (Phase Bias)   | **REQUIRED for AR** | `WUM0MGXRAP_20260150000_01D_01D_OSB.BIA` | pdp3 auto-downloads (key for PPP-AR!) |
+| ERP                | **REQUIRED**        | `WUM0MGXRAP_20260150000_01D_01D_ERP.ERP` | pdp3 auto-downloads                   |
+| ATX                | **REQUIRED**        | `igs20_2317.atx` in `table/`             | Already in PRIDE's table/ directory   |
+| OBX (Attitude)     | RECOMMENDED         | `COD0MGXFIN_20260150000_01D_30S_ATT.OBX` | Must pre-place in product dir         |
+| SINEX (.snx)       | Optional            | `MIT0OPSSNX_2026015_SOL.SNX`             | For a priori coordinates              |
+| Nav (.rnx)         | Auto                | `BRDC00IGS_R_*_MN.rnx`                   | pdp3 downloads automatically          |
+| sat_parameters     | Auto                | (from ftp://gnsswhu.cn)                  | pdp3 downloads from table server      |
+
+<div style="background: #fffde7; border-left: 5px solid #f9a825; padding: 10px 16px; margin: 8px 0; border-radius: 4px">
+💡 <strong>Why does PRIDE use WUM products while other tools use CODE products?</strong><br>
+PRIDE PPP-AR is developed by Wuhan University, and its ambiguity resolution algorithm
+uses Wuhan's specific Observable-Specific Bias (OSB) products. The SP3/CLK and OSB MUST
+come from the same analysis center's calibration system. Using CODE SP3 with WUM OSB
+would give inconsistent phase bias corrections. PRIDE + WUM products = consistent system.
+</div>
+
+**Pre-placing products for PRIDE (if pdp3 download fails):**
+
+```bash
+# From WSL — PRIDE looks for products in <working_dir>/<year>/product/common/
+mkdir -p "/mnt/c/PPP_PROJECT/PRIDE_work/2026/015/product/common"
+cp /mnt/c/PPP_PROJECT/products/sp3/WUM0MGXRAP_20260150000_01D_05M_ORB.SP3 \
+   "/mnt/c/PPP_PROJECT/PRIDE_work/2026/015/product/common/"
+cp /mnt/c/PPP_PROJECT/products/clk/WUM0MGXRAP_20260150000_01D_30S_CLK.CLK \
+   "/mnt/c/PPP_PROJECT/PRIDE_work/2026/015/product/common/"
+cp /mnt/c/PPP_PROJECT/products/erp/WUM0MGXRAP_20260150000_01D_01D_ERP.ERP \
+   "/mnt/c/PPP_PROJECT/PRIDE_work/2026/015/product/common/"
+cp /mnt/c/PPP_PROJECT/products/bia/WUM0MGXRAP_20260150000_01D_01D_OSB.BIA \
+   "/mnt/c/PPP_PROJECT/PRIDE_work/2026/015/product/common/"
+```
+
+</div>
+
+---
+
+<div style="border-left: 5px solid #e53e3e; background: #fff5f5; padding: 1px 20px; margin: 10px 0">
+
+## PART 17 — Which File to Use for Each Research Question 🔴
+
+> This table maps every research experiment to the exact files, tool settings, and
+> expected output location. Use this as your run checklist.
+
+### Research Question 1: Broadcast vs. Precise Products
+
+**Goal:** How much does position accuracy improve when using precise SP3+CLK vs. broadcast nav?
+
+| Run                     | Tool | SP3/CLK                         | ionoopt | navsys | Output                  | Expected Accuracy |
+| ----------------------- | ---- | ------------------------------- | ------- | ------ | ----------------------- | ----------------- |
+| A: Broadcast only       | GAMP | None (leave out)                | 2=IF12  | 1=GPS  | `broadcast_GPS.pos`     | **2–5 m** RMS     |
+| B: Precise (GPS)        | GAMP | COD0OPSFIN SP3 + IGS0OPSFIN CLK | 2=IF12  | 1=GPS  | `precise_GPS.pos`       | **5–15 cm** RMS   |
+| C: Precise (multi-GNSS) | GAMP | COD0MGXFIN SP3+CLK              | 4=UC12  | 45=all | `precise_multiGNSS.pos` | **2–5 cm** RMS    |
+
+**Specific GAMP config changes for Broadcast-only:**
+
+```ini
+posmode = 7          # PPP static
+navsys  = 1          # GPS only
+ionoopt = 2          # IF12 (broadcast ionosphere cancels automatically)
+# Remove SP3 and CLK from working folder
+```
+
+---
+
+### Research Question 2: GPS-only vs. Multi-GNSS
+
+**Goal:** Does adding Galileo/BeiDou reduce convergence time?
+
+| Run             | Tool | navsys                     | SP3+CLK                 | Convergence Time       |
+| --------------- | ---- | -------------------------- | ----------------------- | ---------------------- |
+| GPS only        | GAMP | 1                          | COD0OPSFIN + IGS0OPSFIN | **20–35 min** to 10 cm |
+| GPS + Galileo   | GAMP | 13 (1+4+8→ actually 1+8=9) | COD0MGXFIN + COD0MGXFIN | **12–20 min** to 10 cm |
+| GPS + GAL + BDS | GAMP | 45                         | COD0MGXFIN + COD0MGXFIN | **8–15 min** to 10 cm  |
+
+<div style="background: #fffde7; border-left: 5px solid #f9a825; padding: 10px 16px; margin: 8px 0; border-radius: 4px">
+💡 <strong>GAMP navsys for GPS+Galileo only = 9 (1+8)</strong>, not 13.
+GLONASS=4, so GPS+GLONASS+Galileo = 13. For GPS+Galileo without GLONASS = 9.
+For your comparison, running GPS+GAL (9) separately from GPS+GAL+BDS (45) is
+more informative for showing Galileo's specific contribution.
+</div>
+
+---
+
+### Research Question 3: Float PPP vs. PPP-AR
+
+**Goal:** How much faster does PRIDE PPP-AR converge compared to float PPP?
+
+| Run       | Tool      | Command                           | AR On? | Expected Convergence |
+| --------- | --------- | --------------------------------- | ------ | -------------------- |
+| Float PPP | PRIDE     | `pdp3 -m S -float -sys gec <obs>` | No     | 20–40 min to 5 cm    |
+| PPP-AR    | PRIDE     | `pdp3 -m S -sys gec <obs>`        | Yes    | **2–8 min** to 5 cm  |
+| Float PPP | RTKLIB    | PPP-Static, Ambiguity=Off         | No     | 20–40 min            |
+| PPP-AR    | RTKLIB-EX | PPP-Static, Ambiguity=PPP-AR      | Yes    | 5–15 min             |
+
+**Files for PRIDE runs:** WUM0MGXRAP SP3 + CLK + OSB + ERP (auto-downloaded by pdp3)
+
+---
+
+### Research Question 4: Station Comparison — HKWS vs. ZIM2
+
+**Goal:** Compare tropical/coastal (HK) vs. mid-latitude/inland (Switzerland) performance.
+
+Run the SAME experiment on BOTH stations:
+
+```bash
+# PRIDE: ZIM2
+pdp3 -m S -sys gec --config /tmp/pride_config.cfg \
+  /mnt/c/PPP_PROJECT/data/ZIM200CHE_R_20260150000_01D_30S_MO.rnx
+
+# PRIDE: HKWS
+pdp3 -m S -sys gec --config /tmp/pride_config.cfg \
+  /mnt/c/PPP_PROJECT/data/HKWS00HKG_R_20260150000_01D_30S_MO.rnx
+```
+
+Expected: ZIM2 (inland, mid-latitude, 5-constellation receiver) converges faster and
+achieves lower tropospheric delay uncertainty than HKWS (coastal, tropical, higher humidity).
+
+---
+
+### Research Question 5: Tool Comparison — All Four Tools, Same Data
+
+**Goal:** Compare accuracy and convergence across RTKLIB, RTKLIB-EX, GAMP, PRIDE.
+
+Use identical settings (GPS+GAL+BDS, dual-freq, static, same SP3+CLK) on the same
+observation file. Run these commands/configs:
+
+| Tool      | Files to Use                    | Mode                 | Expected Final Accuracy |
+| --------- | ------------------------------- | -------------------- | ----------------------- |
+| RTKLIB    | WUM SP3+CLK, igs20.atx, CAS DCB | PPP-Static           | 5–15 cm (float)         |
+| RTKLIB-EX | COD0MGXFIN SP3+CLK, igs20.atx   | PPP-Static + AR      | 2–8 cm                  |
+| GAMP      | COD0MGXFIN SP3+CLK+ERP, CAS DCB | navsys=45, ionoopt=4 | 2–5 cm                  |
+| PRIDE     | WUM SP3+CLK+OSB (auto)          | pdp3 -m S -sys gec   | **1–3 cm** (PPP-AR)     |
+
+</div>
+
+---
+
+<div style="border-left: 5px solid #e53e3e; background: #fff5f5; padding: 1px 20px; margin: 10px 0">
+
+## PART 18 — PRIDE PPP-AR: Complete Windows/WSL Setup and Running Real Data 🔴
+
+> This replaces PART 7 with the working procedure verified on your system.
+> PART 7 above shows the general approach; this section shows the ACTUAL commands
+> that work on your Windows + WSL setup.
+
+### Your PRIDE Setup (Already Done)
+
+| Component      | Location                                             | Status                |
+| -------------- | ---------------------------------------------------- | --------------------- |
+| Source code    | `C:\Program Files (x86)\PRIDE-PPPAR-master\`         | Compiled ✅           |
+| Binaries       | `C:\Program Files (x86)\PRIDE-PPPAR-master\bin\`     | Built ✅              |
+| Table files    | `C:\Program Files (x86)\PRIDE-PPPAR-master\table\`   | Present ✅            |
+| `pdp3` wrapper | `C:\Program Files (x86)\PRIDE-PPPAR-master\bin\pdp3` | Created ✅            |
+| WSL path alias | `/tmp/pride` → PRIDE root                            | Created per run ✅    |
+| Config fix     | `/tmp/pride_config_test.cfg`                         | Created by test.sh ✅ |
+
+### Why test.sh Still Fails (and How to Fix It)
+
+The current test.sh output shows:
+
+- ✅ Config found: `/tmp/pride_config_test.cfg`
+- ✅ Table directory: `/tmp/pride/table`
+- ✅ Executables all found
+- ✅ Broadcast nav downloads (BRDC00IGS_R files)
+- ❌ WUM SP3/CLK download fails via FTP (Wuhan server timeout)
+
+**Root cause:** The PRIDE test data uses dates in 2020–2023 (GPS weeks 2086–2243).
+In `pdp3.sh`, the IGN FTP fallback is **hardcoded to only work for GPS week ≥ 2290**.
+So for test dates, only the Wuhan FTP is tried — which times out.
+
+**Fix: Run the pre-download script FIRST:**
+
+```bash
+# In WSL terminal:
+cd "/mnt/c/Program Files (x86)/PRIDE-PPPAR-master/example"
+bash download_test_products.sh    # downloads via CDDIS HTTPS
+bash test.sh                      # now products are cached, FTP skipped
+```
+
+After `download_test_products.sh` succeeds, the products are cached in
+`<example>/<year>/product/common/` and pdp3 uses them directly without FTP.
+
+### Running PRIDE on Your Real Data (2026-01-15, HKWS and ZIM2)
+
+For GPS week 2401 (2026-01-15), the IGN FTP fallback IS enabled (2401 ≥ 2290).
+pdp3 should auto-download successfully without needing pre-downloads.
+
+**Step 1: Create a PRIDE working directory**
+
+```bash
+# In WSL:
+mkdir -p /mnt/c/PPP_PROJECT/PRIDE_work
+cd /mnt/c/PPP_PROJECT/PRIDE_work
+```
+
+**Step 2: Create a config file pointing to your table directory**
+
+```bash
+cat > /tmp/pride_config.cfg << 'EOF'
+## PRIDE PPP-AR configuration for HKWS/ZIM2 2026-01-15
+## Modified from config_template
+
+## Table directory
+Table directory = /mnt/c/Program Files (x86)/PRIDE-PPPAR-master/table
+
+## Satellite product
+Product directory = Default
+
+## Processing options
+ZTD model         = STO
+Tides             = SOLID OCEAN POLE
+EOF
+```
+
+**Alternative: Use the symlink approach to avoid spaces in path:**
+
+```bash
+# Create symlink to avoid "Program Files (x86)" path issues
+ln -sfn "/mnt/c/Program Files (x86)/PRIDE-PPPAR-master" /tmp/pride
+
+# Create config using symlink path
+cat > /tmp/pride_config.cfg << 'EOF'
+Table directory = /tmp/pride/table
+Product directory = Default
+ZTD model         = STO
+Tides             = SOLID OCEAN POLE
+EOF
+```
+
+**Step 3: Set PATH and run pdp3**
+
+```bash
+export PATH="/tmp/pride/bin:/tmp/pride/scripts:$PATH"
+
+# Static PPP-AR, GPS + Galileo + BeiDou
+cd /mnt/c/PPP_PROJECT/PRIDE_work
+pdp3 -m S -sys gec --config /tmp/pride_config.cfg \
+  /mnt/c/PPP_PROJECT/data/HKWS00HKG_R_20260150000_01D_30S_MO.rnx
+```
+
+**Step 4: Check output**
+
+PRIDE creates a folder `2026/015/` in your current directory:
+
+```
+PRIDE_work/
+  2026/015/
+    product/common/          ← downloaded WUM products
+    kin_2026015_hkws         ← kinematic position time series
+    ztd_2026015              ← tropospheric delay estimates
+    res_2026015              ← observation residuals
+    flt_2026015_hkws         ← Kalman filter states
+    log_2026015_hkws         ← processing log
+    config_hkws              ← used configuration
+```
+
+**Reading the kin\_ output file:**
+
+```
+# Columns: MJD, SOD, X(m), Y(m), Z(m), SigX, SigY, SigZ, NumSat, PDOP, Fix
+58863.0  0.0  -2414262.123  5386840.456  2404337.789  0.012  0.014  0.023  12  1.8  1
+```
+
+- Column 11 (Fix): `1` = ambiguity fixed (PPP-AR), `0` = float
+
+**Step 5: Run all four scenarios for comparison**
+
+```bash
+# Run 1: Float PPP, GPS only
+pdp3 -m S -float -sys g --config /tmp/pride_config.cfg \
+  /mnt/c/PPP_PROJECT/data/HKWS00HKG_R_20260150000_01D_30S_MO.rnx
+mv 2026/015 results/HKWS_float_GPS
+
+# Run 2: PPP-AR, GPS only
+pdp3 -m S -sys g --config /tmp/pride_config.cfg \
+  /mnt/c/PPP_PROJECT/data/HKWS00HKG_R_20260150000_01D_30S_MO.rnx
+mv 2026/015 results/HKWS_AR_GPS
+
+# Run 3: PPP-AR, GPS+Galileo+BDS
+pdp3 -m S -sys gec --config /tmp/pride_config.cfg \
+  /mnt/c/PPP_PROJECT/data/HKWS00HKG_R_20260150000_01D_30S_MO.rnx
+mv 2026/015 results/HKWS_AR_GEC
+
+# Run 4: Same for ZIM2
+pdp3 -m S -sys gec --config /tmp/pride_config.cfg \
+  /mnt/c/PPP_PROJECT/data/ZIM200CHE_R_20260150000_01D_30S_MO.rnx
+mv 2026/015 results/ZIM2_AR_GEC
+```
+
+### Setting Up GAMP for 2026-01-15
+
+```powershell
+# In Windows PowerShell — create GAMP working folder with all products
+New-Item -ItemType Directory -Force "C:\PPP_PROJECT\GAMP_work\2026015"
+
+# Copy observation files
+Copy-Item "C:\PPP_PROJECT\data\HKWS00HKG_R_20260150000_01D_30S_MO.rnx" `
+          "C:\PPP_PROJECT\GAMP_work\2026015\"
+Copy-Item "C:\PPP_PROJECT\data\ZIM200CHE_R_20260150000_01D_30S_MO.rnx" `
+          "C:\PPP_PROJECT\GAMP_work\2026015\"
+
+# Copy products (GAMP needs everything in one folder)
+Copy-Item "C:\PPP_PROJECT\products\nav\BRD400DLR_S_20260150000_01D_MN.rnx" `
+          "C:\PPP_PROJECT\GAMP_work\2026015\"
+Copy-Item "C:\PPP_PROJECT\products\sp3\COD0MGXFIN_20260150000_01D_05M_ORB.SP3" `
+          "C:\PPP_PROJECT\GAMP_work\2026015\"
+Copy-Item "C:\PPP_PROJECT\products\clk\COD0MGXFIN_20260150000_01D_30S_CLK.CLK" `
+          "C:\PPP_PROJECT\GAMP_work\2026015\"
+Copy-Item "C:\PPP_PROJECT\products\erp\COD0MGXFIN_20260150000_01D_12H_ERP.ERP" `
+          "C:\PPP_PROJECT\GAMP_work\2026015\"
+Copy-Item "C:\PPP_PROJECT\products\dcb\CAS0OPSRAP_2026015_DCB.BIA" `
+          "C:\PPP_PROJECT\GAMP_work\2026015\CAS0OPSRAP_20260150000_01D_01D_DCB.BIA"
+Copy-Item "C:\PPP_PROJECT\products\ionex\COD0OPSFIN_2026015_GIM.INX" `
+          "C:\PPP_PROJECT\GAMP_work\2026015\"
+Copy-Item "C:\PPP_PROJECT\products\atx\igs20.atx" `
+          "C:\PPP_PROJECT\GAMP_work\2026015\"
+Copy-Item "C:\PPP_PROJECT\products\snx\MIT0OPSSNX_2026015_SOL.SNX" `
+          "C:\PPP_PROJECT\GAMP_work\2026015\"
+```
+
+**Create `C:\PPP_PROJECT\GAMP_work\2026015\gamp.cfg`:**
+
+```ini
+# GAMP config for HKWS/ZIM2, 2026-01-15, Multi-GNSS PPP Static
+obs file/folder = 1
+               = C:\PPP_PROJECT\GAMP_work\2026015
+
+start_time      = 0    2026/01/15  00:00:00.0
+end_time        = 0    2026/01/15  23:59:30.0
+posmode         = 7               # 7 = PPP static
+soltype         = 0               # 0 = forward filter
+navsys          = 45              # GPS+GLONASS+Galileo+BDS
+ionoopt         = 4               # 4 = UC12 (uncombined dual-freq)
+ionopnoise      = 1               # random walk ionosphere
+ionconstraint   = 0
+tropopt         = 3               # ZTD estimation
+tropmf          = 1               # GMF mapping function
+tidecorr        = 7               # solid+ocean+pole tides
+minelev         = 7.0
+outdir          = result
+output          = 21
+     pos        = 1
+     debug      = 1
+     pdop        = 1
+     elev        = 1
+     dtrp        = 1
+```
+
+**Run GAMP:**
+
+```cmd
+# In Windows CMD:
+"C:\Program Files (x86)\GAMP\GAMP\bin\Windows\gamp.exe" "C:\PPP_PROJECT\GAMP_work\2026015\gamp.cfg"
+```
+
+</div>
+
+---
+
+<div style="border-left: 5px solid #e53e3e; background: #fff5f5; padding: 1px 20px; margin: 10px 0">
+
+## PART 19 — Expected Results Reference 🔴
+
+> Use these numbers to verify your results are reasonable. Values significantly
+> outside these ranges suggest a configuration error.
+
+### Station Reference Coordinates (ITRF2020)
+
+These are the IGS ITRF2020 coordinates for your stations (use for accuracy evaluation):
+
+**HKWS (Hong Kong):**
+
+- Latitude: ~22.3° N
+- Longitude: ~114.1° E
+- Height: ~71 m (ellipsoidal)
+- Multi-GNSS: GPS + GLONASS + Galileo + BeiDou
+- Expected visible satellites: 12–18 (multi-GNSS), 8–12 (GPS only)
+
+**ZIM2 (Zimmerwald, Switzerland):**
+
+- Latitude: ~46.9° N
+- Longitude: ~7.5° E
+- Height: ~956 m (ellipsoidal)
+- Multi-GNSS: GPS + GLONASS + Galileo
+- Expected visible satellites: 10–16 (multi-GNSS), 6–10 (GPS only)
+
+<div style="background: #fffde7; border-left: 5px solid #f9a825; padding: 10px 16px; margin: 8px 0; border-radius: a4px">
+💡 <strong>Getting exact reference coordinates:</strong> Extract from the SNX file:<br>
+<code>grep "HKWS\|ZIM2" C:\PPP_PROJECT\products\snx\MIT0OPSSNX_2026015_SOL.SNX</code><br>
+Or from IGS station page: https://network.igs.org/
+</div>
+
+### Expected Accuracy by Tool and Mode
+
+| Tool          | Mode                  | GNSS        | Convergence | Final 3D RMS | Notes                   |
+| ------------- | --------------------- | ----------- | ----------- | ------------ | ----------------------- |
+| **RTKLIB**    | PPP-Static, Broadcast | GPS         | N/A (SPP)   | 1–5 m        | Broadcast only, no PPP  |
+| **RTKLIB**    | PPP-Static, Precise   | GPS         | 25–40 min   | 5–15 cm      | Float PPP               |
+| **RTKLIB**    | PPP-Static, Precise   | GPS+GAL+BDS | 15–25 min   | 3–10 cm      | Float multi-GNSS        |
+| **RTKLIB-EX** | PPP-Static + AR       | GPS         | 15–25 min   | 3–8 cm       | Ambiguity resolution    |
+| **RTKLIB-EX** | PPP-Static + AR       | GPS+GAL+BDS | 8–15 min    | 1–5 cm       | Best RTKLIB-EX result   |
+| **GAMP**      | PPP-Static, IF        | GPS         | 20–35 min   | 5–12 cm      | ionoopt=2 (IF12)        |
+| **GAMP**      | PPP-Static, UC12      | GPS+GAL+BDS | 8–15 min    | 2–6 cm       | ionoopt=4 (best)        |
+| **PRIDE**     | PPP-AR (float)        | GPS         | 20–35 min   | 5–15 cm      | `-float` flag           |
+| **PRIDE**     | PPP-AR (fixed)        | GPS         | 5–15 min    | **1–4 cm**   | Integer fixed           |
+| **PRIDE**     | PPP-AR (fixed)        | GPS+GAL+BDS | **2–8 min** | **1–3 cm**   | **Best result overall** |
+
+### Understanding Your GAMP Output File
+
+GAMP creates `result/<stationname>.pos` with these columns:
+
+```
+%GPST         X(m)         Y(m)         Z(m)  Q  Ns  sdN(m) sdE(m) sdU(m) ...
+2026/01/15 00:00:00.000  -2414262.xxx  5386840.xxx  2404337.xxx  2  12  0.31  0.28  0.55 ...
+```
+
+- **Q=5** → SPP (broadcast)
+- **Q=2** → Float PPP
+- **Q=1** → Fixed PPP (not produced by GAMP — PRIDE produces this)
+- **sdN, sdE, sdU** → formal uncertainties. As convergence progresses, these shrink.
+
+### Understanding Your RTKLIB .pos Output File
+
+```
+%  GPST          latitude(deg) longitude(deg) height(m)   Q  ns   sdn(m)    sde(m)    sdu(m) ...
+2026/01/15 00:00:00.000   22.29xxxx   114.1xxxx   71.xxx   5   8   2.3456    1.2345    3.4567 ...
+```
+
+- **Q=5** → SPP (single point, broadcast)
+- **Q=2** → DGPS (differential — not relevant for PPP)
+- **Q=5 persisting** → PPP not converging — check that SP3+CLK are loaded correctly
+
+### Understanding PRIDE kin\_ Output
+
+```
+%  MJD           SOD      x-ECEF(m)      y-ECEF(m)      z-ECEF(m)  Sig_x  Sig_y  Sig_z  Ns  PDOP  Fix
+2026/01/15  0.000  -2414262.xxx  5386840.xxx  2404337.xxx  0.312  0.281  0.553  12  1.8   0
+2026/01/15  30.000 -2414262.xxx  5386840.xxx  2404337.xxx  0.045  0.039  0.089  12  1.7   1
+```
+
+- **Fix=0** → Float phase (still converging)
+- **Fix=1** → Ambiguity fixed! Watch the σ values drop sharply when Fix becomes 1.
+- Convergence = when Fix stays 1 for 5+ consecutive epochs
+
+### What to Plot in Your Report
+
+1. **Position error vs. time** — shows convergence curve (tool comparison)
+2. **σ (sigma) vs. time** — formal uncertainty, shows when tool "thinks" it converged
+3. **Ambiguity fix rate** — fraction of epochs with Fix=1 (PRIDE only)
+4. **PDOP vs. time** — satellite geometry (explains spikes in error)
+5. **Residuals histogram** — should be normally distributed; outliers show multipath
+
+### GAMP vs. PRIDE Final Accuracy Comparison Table (Typical for your stations)
+
+| Metric               | GAMP (navsys=45)  | PRIDE PPP-AR   | Winner |
+| -------------------- | ----------------- | -------------- | ------ |
+| 3D RMS after 1 hour  | 3–8 cm            | 1–4 cm         | PRIDE  |
+| 3D RMS after 6 hours | 2–4 cm            | 1–2 cm         | PRIDE  |
+| Convergence time     | 10–20 min         | 2–8 min        | PRIDE  |
+| Ease of setup        | Easy (one folder) | Moderate (WSL) | GAMP   |
+| Multi-GNSS support   | Excellent         | Excellent      | Tie    |
+| Troposphere output   | Yes               | Yes            | Tie    |
+| Ambiguity resolution | No                | Yes            | PRIDE  |
+
+</div>
+
+---
+
+<div style="border-left: 5px solid #e53e3e; background: #fff5f5; padding: 1px 20px; margin: 10px 0">
+
+## APPENDIX C — Quick Command Reference 🔴
+
+### GAMP (Windows CMD)
+
+```cmd
+# PPP Static Multi-GNSS
+"C:\Program Files (x86)\GAMP\GAMP\bin\Windows\gamp.exe" "C:\PPP_PROJECT\GAMP_work\2026015\gamp.cfg"
+```
+
+### RTKLIB rtkpost (Windows GUI — no command line needed)
+
+Just double-click `C:\Program Files\RTKLIB\bin\rtkpost.exe`
+
+### RTKLIB-EX rtkpost (Windows GUI)
+
+Double-click `C:\Program Files\RTKLIB_EX_2.5.0\rtkpost.exe`
+
+### PRIDE PPP-AR (WSL terminal)
+
+```bash
+# One-time setup per WSL session:
+ln -sfn "/mnt/c/Program Files (x86)/PRIDE-PPPAR-master" /tmp/pride
+export PATH="/tmp/pride/bin:/tmp/pride/scripts:$PATH"
+
+# Create config:
+cat > /tmp/pride_config.cfg << 'EOF'
+Table directory = /tmp/pride/table
+Product directory = Default
+ZTD model = STO
+Tides = SOLID OCEAN POLE
+EOF
+
+# Run for HKWS (static, multi-GNSS, PPP-AR):
+cd /mnt/c/PPP_PROJECT/PRIDE_work
+pdp3 -m S -sys gec --config /tmp/pride_config.cfg \
+  /mnt/c/PPP_PROJECT/data/HKWS00HKG_R_20260150000_01D_30S_MO.rnx
+
+# Run for ZIM2:
+pdp3 -m S -sys gec --config /tmp/pride_config.cfg \
+  /mnt/c/PPP_PROJECT/data/ZIM200CHE_R_20260150000_01D_30S_MO.rnx
+
+# Float PPP (no AR) for comparison:
+pdp3 -m S -float -sys gec --config /tmp/pride_config.cfg \
+  /mnt/c/PPP_PROJECT/data/HKWS00HKG_R_20260150000_01D_30S_MO.rnx
+```
+
+### Python Download Script
+
+```cmd
+cd C:\PPP_PROJECT
+# Multi-GNSS products for Jan 15, 2026
+python download_ppp_data.py --stations HKWS ZIM2 --date 2026 15
+# Observations only
+python download_ppp_data.py --stations HKWS ZIM2 --date 2026 15 --obs-only
+```
+
+### PRIDE Test (run download_test_products.sh first!)
+
+```bash
+# In WSL:
+cd "/mnt/c/Program Files (x86)/PRIDE-PPPAR-master/example"
+bash download_test_products.sh    # pre-download products (run once)
+bash test.sh                      # should now complete all 6 tests
+```
+
+</div>
