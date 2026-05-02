@@ -84,13 +84,30 @@ developed by rtklibexplorer. Same GUI apps as stock RTKLIB, but with better PPP 
 ### Tool 3: GAMP (the multi-constellation champion — `C:\Program Files (x86)\GAMP\GAMP`)
 
 **What it is:** GNSS Analysis software for Multi-constellation and multi-frequency
-Precise Positioning. Developed by Chinese researchers. It's a **command-line** tool
-(no graphical interface). You edit a config file, run it, and get results.
+Precise Positioning. Developed by Chinese researchers (Feng Zhou et al.). It's a
+**command-line** tool — you edit a config file, run it, get results. No GUI.
 
 **Why use it for your research?** It handles GPS + GLONASS + Galileo + BeiDou better
-than basic RTKLIB and lets you easily switch which constellations to use.
+than basic RTKLIB and lets you easily switch which constellations to use via a single
+`navsys` setting. It also supports the uncombined dual-frequency (UC) model which is
+considered more mathematically flexible than the classic ionosphere-free (IF) combination.
 
 **Executable:** `C:\Program Files (x86)\GAMP\GAMP\bin\Windows\gamp.exe`
+
+**Output can be viewed in rtkplot.exe** — GAMP's `.pos` output format is fully
+compatible with `C:\Program Files\RTKLIB\bin\rtkplot.exe`.
+
+#### What is GOOD? (You may have heard "GAMP and GOOD")
+
+**GOOD** (GNSS Observations and prODucts downloading tool) is a **companion software**
+developed by the same research group as GAMP. While GAMP _processes_ GNSS data,
+GOOD _automates the downloading_ of observation files and precise products
+from CDDIS, IGN, Wuhan, and other servers.
+
+**Do you need GOOD?** No — you already have all your data downloaded. The
+`download_ppp_data.py` script in your project does the same job. GOOD is useful
+if you're doing batch processing of many days/stations. It's a separate executable
+and is **not included** in the GAMP folder in your workspace.
 
 ---
 
@@ -1914,56 +1931,78 @@ pdp3 -m S -sys gec --config /tmp/pride_config.cfg \
 mv 2026/015 results/ZIM2_AR_GEC
 ```
 
-### Setting Up GAMP for 2026-01-15
+### Setting Up GAMP for 2026-01-15 — Complete Research Analysis
+
+#### Step 1: Prepare the Working Folder (one time)
+
+GAMP requires all input files in a single folder. Run this once in PowerShell:
 
 ```powershell
-# In Windows PowerShell — create GAMP working folder with all products
+# Create working folder
 New-Item -ItemType Directory -Force "C:\PPP_PROJECT\GAMP_work\2026015"
 
 # Copy observation files
-Copy-Item "C:\PPP_PROJECT\data\HKWS00HKG_R_20260150000_01D_30S_MO.rnx" `
-          "C:\PPP_PROJECT\GAMP_work\2026015\"
-Copy-Item "C:\PPP_PROJECT\data\ZIM200CHE_R_20260150000_01D_30S_MO.rnx" `
-          "C:\PPP_PROJECT\GAMP_work\2026015\"
+Copy-Item "C:\PPP_PROJECT\data\HKWS00HKG_R_20260150000_01D_30S_MO.rnx" "C:\PPP_PROJECT\GAMP_work\2026015\"
+Copy-Item "C:\PPP_PROJECT\data\ZIM200CHE_R_20260150000_01D_30S_MO.rnx"  "C:\PPP_PROJECT\GAMP_work\2026015\"
 
-# Copy products (GAMP needs everything in one folder)
-Copy-Item "C:\PPP_PROJECT\products\nav\BRD400DLR_S_20260150000_01D_MN.rnx" `
-          "C:\PPP_PROJECT\GAMP_work\2026015\"
-Copy-Item "C:\PPP_PROJECT\products\sp3\COD0MGXFIN_20260150000_01D_05M_ORB.SP3" `
-          "C:\PPP_PROJECT\GAMP_work\2026015\"
-Copy-Item "C:\PPP_PROJECT\products\clk\COD0MGXFIN_20260150000_01D_30S_CLK.CLK" `
-          "C:\PPP_PROJECT\GAMP_work\2026015\"
-Copy-Item "C:\PPP_PROJECT\products\erp\COD0MGXFIN_20260150000_01D_12H_ERP.ERP" `
-          "C:\PPP_PROJECT\GAMP_work\2026015\"
-Copy-Item "C:\PPP_PROJECT\products\dcb\CAS0OPSRAP_2026015_DCB.BIA" `
-          "C:\PPP_PROJECT\GAMP_work\2026015\CAS0OPSRAP_20260150000_01D_01D_DCB.BIA"
-Copy-Item "C:\PPP_PROJECT\products\ionex\COD0OPSFIN_2026015_GIM.INX" `
-          "C:\PPP_PROJECT\GAMP_work\2026015\"
-Copy-Item "C:\PPP_PROJECT\products\atx\igs20.atx" `
-          "C:\PPP_PROJECT\GAMP_work\2026015\"
-Copy-Item "C:\PPP_PROJECT\products\snx\MIT0OPSSNX_2026015_SOL.SNX" `
-          "C:\PPP_PROJECT\GAMP_work\2026015\"
+# Navigation (broadcast)
+Copy-Item "C:\PPP_PROJECT\products\nav\BRD400DLR_S_20260150000_01D_MN.rnx" "C:\PPP_PROJECT\GAMP_work\2026015\"
+
+# SP3 orbit files (GPS/GLO only AND multi-GNSS — you'll switch between them)
+Copy-Item "C:\PPP_PROJECT\products\sp3\COD0OPSFIN_2026015_ORB.SP3"                "C:\PPP_PROJECT\GAMP_work\2026015\"
+Copy-Item "C:\PPP_PROJECT\products\sp3\COD0MGXFIN_20260150000_01D_05M_ORB.SP3"    "C:\PPP_PROJECT\GAMP_work\2026015\"
+
+# CLK clock files (GPS/GLO only AND multi-GNSS)
+Copy-Item "C:\PPP_PROJECT\products\clk\IGS0OPSFIN_2026015_CLK.CLK"                "C:\PPP_PROJECT\GAMP_work\2026015\"
+Copy-Item "C:\PPP_PROJECT\products\clk\COD0MGXFIN_20260150000_01D_30S_CLK.CLK"    "C:\PPP_PROJECT\GAMP_work\2026015\"
+
+# ERP, DCB, IONEX, ATX, SNX
+Copy-Item "C:\PPP_PROJECT\products\erp\COD0MGXFIN_20260150000_01D_12H_ERP.ERP"    "C:\PPP_PROJECT\GAMP_work\2026015\"
+Copy-Item "C:\PPP_PROJECT\products\dcb\CAS0OPSRAP_2026015_DCB.BIA"                "C:\PPP_PROJECT\GAMP_work\2026015\"
+Copy-Item "C:\PPP_PROJECT\products\ionex\COD0OPSFIN_2026015_GIM.INX"              "C:\PPP_PROJECT\GAMP_work\2026015\"
+Copy-Item "C:\PPP_PROJECT\products\atx\igs20.atx"                                 "C:\PPP_PROJECT\GAMP_work\2026015\"
+Copy-Item "C:\PPP_PROJECT\products\snx\MIT0OPSSNX_2026015_SOL.SNX"                "C:\PPP_PROJECT\GAMP_work\2026015\"
 ```
 
-**Create `C:\PPP_PROJECT\GAMP_work\2026015\gamp.cfg`:**
+Create the results folder too:
+
+```cmd
+mkdir C:\PPP_PROJECT\GAMP_work\2026015\result
+```
+
+---
+
+#### Step 2: Run Scenario A — GPS-only, Broadcast Ephemeris (Baseline)
+
+**Purpose:** This is your baseline "no precise products" run. Shows what accuracy
+you get with just the broadcast navigation message — what your phone essentially does
+but in post-processing. Expected horizontal accuracy: 1–3 m.
+
+**Why these settings?**
+
+- `navsys = 1` → GPS only (broadcast nav only has GPS info in .rnx mixed nav, GLONASS possible too but let's isolate GPS)
+- `ionoopt = 1` → Use Klobuchar broadcast model (single-freq equivalent, no precise IONEX needed)
+- No `sp3 file` or `clk file` → forces GAMP to use broadcast ephemeris
+
+Create `C:\PPP_PROJECT\GAMP_work\2026015\gamp_A_broadcast.cfg`:
 
 ```ini
-# GAMP config for HKWS/ZIM2, 2026-01-15, Multi-GNSS PPP Static
+# Scenario A: GPS-only, Broadcast products (baseline comparison)
 obs file/folder = 1
                = C:\PPP_PROJECT\GAMP_work\2026015
 
 start_time      = 0    2026/01/15  00:00:00.0
 end_time        = 0    2026/01/15  23:59:30.0
-posmode         = 7               # 7 = PPP static
-soltype         = 0               # 0 = forward filter
-navsys          = 45              # GPS+GLONASS+Galileo+BDS
-ionoopt         = 4               # 4 = UC12 (uncombined dual-freq)
-ionopnoise      = 1               # random walk ionosphere
-ionconstraint   = 0
-tropopt         = 3               # ZTD estimation
+posmode         = 7               # PPP static
+soltype         = 0               # forward filter
+navsys          = 1               # GPS only
+inpfrq          = 2               # dual frequency
+ionoopt         = 1               # broadcast Klobuchar model
+tropopt         = 3               # estimate ZTD
 tropmf          = 1               # GMF mapping function
 tidecorr        = 7               # solid+ocean+pole tides
 minelev         = 7.0
+
 outdir          = result
 output          = 21
      pos        = 1
@@ -1971,16 +2010,278 @@ output          = 21
      pdop        = 1
      elev        = 1
      dtrp        = 1
-```
 
-**Run GAMP:**
+# Broadcast navigation
+nav file        = C:\PPP_PROJECT\GAMP_work\2026015\BRD400DLR_S_20260150000_01D_MN.rnx
+
+# No sp3/clk = uses broadcast ephemeris
+atx file        = C:\PPP_PROJECT\GAMP_work\2026015\igs20.atx
+snx file        = C:\PPP_PROJECT\GAMP_work\2026015\MIT0OPSSNX_2026015_SOL.SNX
+```
 
 ```cmd
-# In Windows CMD:
-"C:\Program Files (x86)\GAMP\GAMP\bin\Windows\gamp.exe" "C:\PPP_PROJECT\GAMP_work\2026015\gamp.cfg"
+"C:\Program Files (x86)\GAMP\GAMP\bin\Windows\gamp.exe" "C:\PPP_PROJECT\GAMP_work\2026015\gamp_A_broadcast.cfg"
 ```
 
-</div>
+Result files will appear in `C:\PPP_PROJECT\GAMP_work\2026015\result\`
+Output: `HKWS00HKG*.pos` and `ZIM200CHE*.pos`
+
+---
+
+#### Step 3: Run Scenario B — GPS-only, Precise Products, IF model
+
+**Purpose:** Classic GPS PPP. Shows the improvement from using precise sp3+clk
+over broadcast. The ionosphere-free (IF) combination on two frequencies cancels
+~99.9% of ionosphere delay mathematically. Expected convergence: 20–40 min to cm-level.
+
+**Why these settings?**
+
+- `navsys = 1` → GPS only (COD0OPSFIN SP3 is GPS/GLONASS, but we focus on GPS)
+- `ionoopt = 2` → Ionosphere-free L1/L2 combination (IF12) — the classic PPP approach
+- `sp3 file` = COD0OPSFIN (GPS+GLO precise orbits, ~2cm accuracy)
+- `clk file` = IGS0OPSFIN (IGS combined clock, best for GPS)
+- SP3 and CLK **must come from the same analysis center pair** — COD0OPSFIN + IGS0OPSFIN is the standard IGS pair
+
+Create `C:\PPP_PROJECT\GAMP_work\2026015\gamp_B_GPS_IF.cfg`:
+
+```ini
+# Scenario B: GPS-only, Precise products, Ionosphere-Free (IF12)
+obs file/folder = 1
+               = C:\PPP_PROJECT\GAMP_work\2026015
+
+start_time      = 0    2026/01/15  00:00:00.0
+end_time        = 0    2026/01/15  23:59:30.0
+posmode         = 7               # PPP static
+soltype         = 0               # forward filter
+navsys          = 1               # GPS only
+inpfrq          = 2               # dual frequency
+ionoopt         = 2               # IF12 ionosphere-free combination
+tropopt         = 3               # estimate ZTD
+tropmf          = 1               # GMF mapping function
+tidecorr        = 7               # solid+ocean+pole tides
+minelev         = 7.0
+
+outdir          = result
+output          = 21
+     pos        = 1
+     debug      = 1
+     pdop        = 1
+     elev        = 1
+     dtrp        = 1
+
+nav file        = C:\PPP_PROJECT\GAMP_work\2026015\BRD400DLR_S_20260150000_01D_MN.rnx
+sp3 file        = C:\PPP_PROJECT\GAMP_work\2026015\COD0OPSFIN_2026015_ORB.SP3
+clk file        = C:\PPP_PROJECT\GAMP_work\2026015\IGS0OPSFIN_2026015_CLK.CLK
+erp file        = C:\PPP_PROJECT\GAMP_work\2026015\COD0MGXFIN_20260150000_01D_12H_ERP.ERP
+dcb p1c1 file   = C:\PPP_PROJECT\GAMP_work\2026015\CAS0OPSRAP_2026015_DCB.BIA
+atx file        = C:\PPP_PROJECT\GAMP_work\2026015\igs20.atx
+snx file        = C:\PPP_PROJECT\GAMP_work\2026015\MIT0OPSSNX_2026015_SOL.SNX
+```
+
+```cmd
+"C:\Program Files (x86)\GAMP\GAMP\bin\Windows\gamp.exe" "C:\PPP_PROJECT\GAMP_work\2026015\gamp_B_GPS_IF.cfg"
+```
+
+---
+
+#### Step 4: Run Scenario C — Multi-GNSS (G+R+E+C), Uncombined (UC12)
+
+**Purpose:** The "best GAMP can do" run. Using GPS + GLONASS + Galileo + BeiDou
+with the uncombined dual-frequency model. More satellites → faster convergence,
+better geometry. UC12 treats ionosphere as an unknown rather than cancelling it,
+which preserves more signal information and improves accuracy for multi-GNSS.
+
+**Why these settings?**
+
+- `navsys = 45` → GPS(1) + GLONASS(4) + Galileo(8) + BeiDou(32) = 45
+  (This is the maximum — Galileo and BeiDou require MGEX products)
+- `ionoopt = 4` → Uncombined dual-frequency (UC12). Each satellite's ionosphere
+  is estimated as an extra unknown. This is preferred for multi-GNSS because
+  different constellations use different frequencies and the classic IF12 combination
+  coefficients are constellation-specific
+- `sp3 file` = COD0MGXFIN (CODE multi-GNSS final — highest quality MGEX orbits)
+- `clk file` = COD0MGXFIN (same center — they MUST match)
+- DCB file is critical here: tells GAMP the code bias differences between signal
+  types for each satellite, essential for BeiDou and Galileo
+
+Create `C:\PPP_PROJECT\GAMP_work\2026015\gamp_C_multiGNSS_UC.cfg`:
+
+```ini
+# Scenario C: Multi-GNSS (G+R+E+C), Uncombined dual-frequency (UC12)
+# This is the highest-accuracy GAMP configuration
+obs file/folder = 1
+               = C:\PPP_PROJECT\GAMP_work\2026015
+
+start_time      = 0    2026/01/15  00:00:00.0
+end_time        = 0    2026/01/15  23:59:30.0
+posmode         = 7               # PPP static
+soltype         = 0               # forward filter
+navsys          = 45              # GPS+GLONASS+Galileo+BeiDou (1+4+8+32)
+inpfrq          = 2               # dual frequency
+ionoopt         = 4               # UC12 uncombined — estimates ionosphere per sat
+ionopnoise      = 1               # ionosphere random walk noise
+ionconstraint   = 0               # no ionosphere constraint (let it float)
+tropopt         = 3               # estimate ZTD
+tropmf          = 1               # GMF mapping function
+tidecorr        = 7               # solid+ocean+pole tides
+minelev         = 7.0
+
+outdir          = result
+output          = 21
+     pos        = 1
+     debug      = 1
+     pdop        = 1
+     elev        = 1
+     dtrp        = 1
+
+nav file        = C:\PPP_PROJECT\GAMP_work\2026015\BRD400DLR_S_20260150000_01D_MN.rnx
+sp3 file        = C:\PPP_PROJECT\GAMP_work\2026015\COD0MGXFIN_20260150000_01D_05M_ORB.SP3
+clk file        = C:\PPP_PROJECT\GAMP_work\2026015\COD0MGXFIN_20260150000_01D_30S_CLK.CLK
+erp file        = C:\PPP_PROJECT\GAMP_work\2026015\COD0MGXFIN_20260150000_01D_12H_ERP.ERP
+dcb p1c1 file   = C:\PPP_PROJECT\GAMP_work\2026015\CAS0OPSRAP_2026015_DCB.BIA
+atx file        = C:\PPP_PROJECT\GAMP_work\2026015\igs20.atx
+snx file        = C:\PPP_PROJECT\GAMP_work\2026015\MIT0OPSSNX_2026015_SOL.SNX
+```
+
+```cmd
+"C:\Program Files (x86)\GAMP\GAMP\bin\Windows\gamp.exe" "C:\PPP_PROJECT\GAMP_work\2026015\gamp_C_multiGNSS_UC.cfg"
+```
+
+---
+
+#### Step 5: Run Scenario D — Multi-GNSS with IONEX GIM
+
+**Purpose:** Tests whether using an external ionosphere map (GIM = Global Ionosphere
+Map) improves results compared to estimating ionosphere per-satellite. In UC12 with
+external GIM, the ionosphere is constrained by the GIM prediction, which can speed up
+convergence especially in single-epoch or short-session processing.
+
+**Why these settings?**
+
+- `ionoopt = 5` → Use IONEX GIM file as ionosphere constraint
+- `ionfile` → Points to the COD GIM file (CODE's global ionosphere map, 1-degree resolution, updated every 2 hours)
+- Compared to Scenario C: determines whether the external ionosphere map actually helps
+
+Create `C:\PPP_PROJECT\GAMP_work\2026015\gamp_D_multiGNSS_GIM.cfg`:
+
+```ini
+# Scenario D: Multi-GNSS with IONEX GIM constraint
+obs file/folder = 1
+               = C:\PPP_PROJECT\GAMP_work\2026015
+
+start_time      = 0    2026/01/15  00:00:00.0
+end_time        = 0    2026/01/15  23:59:30.0
+posmode         = 7
+soltype         = 0
+navsys          = 45              # GPS+GLONASS+Galileo+BeiDou
+inpfrq          = 2
+ionoopt         = 5               # use external IONEX GIM
+tropopt         = 3
+tropmf          = 1
+tidecorr        = 7
+minelev         = 7.0
+
+outdir          = result
+output          = 21
+     pos        = 1
+     debug      = 1
+     pdop        = 1
+     elev        = 1
+     dtrp        = 1
+
+nav file        = C:\PPP_PROJECT\GAMP_work\2026015\BRD400DLR_S_20260150000_01D_MN.rnx
+sp3 file        = C:\PPP_PROJECT\GAMP_work\2026015\COD0MGXFIN_20260150000_01D_05M_ORB.SP3
+clk file        = C:\PPP_PROJECT\GAMP_work\2026015\COD0MGXFIN_20260150000_01D_30S_CLK.CLK
+erp file        = C:\PPP_PROJECT\GAMP_work\2026015\COD0MGXFIN_20260150000_01D_12H_ERP.ERP
+dcb p1c1 file   = C:\PPP_PROJECT\GAMP_work\2026015\CAS0OPSRAP_2026015_DCB.BIA
+ion file        = C:\PPP_PROJECT\GAMP_work\2026015\COD0OPSFIN_2026015_GIM.INX
+atx file        = C:\PPP_PROJECT\GAMP_work\2026015\igs20.atx
+snx file        = C:\PPP_PROJECT\GAMP_work\2026015\MIT0OPSSNX_2026015_SOL.SNX
+```
+
+```cmd
+"C:\Program Files (x86)\GAMP\GAMP\bin\Windows\gamp.exe" "C:\PPP_PROJECT\GAMP_work\2026015\gamp_D_multiGNSS_GIM.cfg"
+```
+
+---
+
+#### Step 6: Repeat Scenarios B and C for ZIM2
+
+To compare HKWS (Hong Kong, low-latitude, higher ionosphere activity) vs ZIM2
+(Switzerland, mid-latitude, calmer ionosphere), just change the observation folder
+to a folder containing **only ZIM2 data**, or temporarily rename/move files.
+
+**Simplest approach:** Copy the entire working folder for each station:
+
+```cmd
+mkdir C:\PPP_PROJECT\GAMP_work\2026015_ZIM2
+# Copy all product files from 2026015 to 2026015_ZIM2
+xcopy "C:\PPP_PROJECT\GAMP_work\2026015\*" "C:\PPP_PROJECT\GAMP_work\2026015_ZIM2\" /E /I
+# Remove HKWS observation from the ZIM2 folder
+del "C:\PPP_PROJECT\GAMP_work\2026015_ZIM2\HKWS00HKG_R_20260150000_01D_30S_MO.rnx"
+```
+
+Then update the `obs file/folder` path in each `.cfg` file to point to `2026015_ZIM2`
+and the `outdir` to `result_ZIM2`. Run the same scenarios for both stations.
+
+---
+
+#### Step 7: View Results in rtkplot
+
+**Yes — GAMP .pos files open directly in rtkplot.exe.**
+
+1. Open `C:\Program Files\RTKLIB\bin\rtkplot.exe`
+2. Menu: **File → Open Solution 1** (or drag-and-drop the `.pos` file)
+3. Navigate to: `C:\PPP_PROJECT\GAMP_work\2026015\result\`
+4. Select e.g. `HKWS00HKG_R_20260150000_01D_30S_MO.pos`
+5. In the "Plot Type" dropdown (top-left), choose:
+   - **"Gnd Trk"** → ground track map
+   - **"Position"** → E/N/U error vs time (most useful for convergence analysis)
+   - **"Velocity"** → for kinematic only
+   - **"Residual"** → satellite residuals
+6. For convergence comparison: Plot type = **"Position"**, click **"ORI"** button to
+   set the reference origin to your known coordinates. The SNX file provides these
+   but you can also manually enter from ITRF2020:
+   - HKWS: 3396803.066 E, 5513394.978 N, 2499393.701 U (ECEF XYZ)
+   - ZIM2: 4331297.344, 567555.639, 4633133.920 (ECEF XYZ)
+
+**To overlay multiple runs** (e.g., GPS-only vs Multi-GNSS):
+
+- File → Open Solution 1 → (first .pos file, shown in red)
+- File → Open Solution 2 → (second .pos file, shown in green)
+- This gives a direct visual comparison of convergence speed
+
+**What to look for:**
+
+- How long until the E/N/U position error drops below 10 cm? (convergence time)
+- What is the final accuracy after convergence? (steady-state RMS)
+- Is multi-GNSS noticeably faster to converge than GPS-only?
+
+---
+
+#### Quick Run Summary (all 4 scenarios, both stations)
+
+| Config file                | navsys    | ionoopt       | Products                | Station   | Research Question         |
+| -------------------------- | --------- | ------------- | ----------------------- | --------- | ------------------------- |
+| `gamp_A_broadcast.cfg`     | 1 (G)     | 1 (Klobuchar) | Broadcast only          | HKWS+ZIM2 | RQ1: Broadcast vs Precise |
+| `gamp_B_GPS_IF.cfg`        | 1 (G)     | 2 (IF12)      | COD0OPSFIN + IGS0OPSFIN | HKWS+ZIM2 | RQ1+RQ2 baseline          |
+| `gamp_C_multiGNSS_UC.cfg`  | 45 (GREC) | 4 (UC12)      | COD0MGXFIN + COD0MGXFIN | HKWS+ZIM2 | RQ2: multi-GNSS           |
+| `gamp_D_multiGNSS_GIM.cfg` | 45 (GREC) | 5 (GIM)       | COD0MGXFIN + GIM        | HKWS+ZIM2 | RQ3: ionosphere model     |
+
+Run them in sequence:
+
+```cmd
+set GAMP="C:\Program Files (x86)\GAMP\GAMP\bin\Windows\gamp.exe"
+set WD=C:\PPP_PROJECT\GAMP_work\2026015
+
+%GAMP% "%WD%\gamp_A_broadcast.cfg"
+%GAMP% "%WD%\gamp_B_GPS_IF.cfg"
+%GAMP% "%WD%\gamp_C_multiGNSS_UC.cfg"
+%GAMP% "%WD%\gamp_D_multiGNSS_GIM.cfg"
+```
+
+Each run takes ~1–5 minutes. Results go to `result\` subfolder.
+Then open all `.pos` files in rtkplot for comparison.
 
 ---
 
@@ -2097,12 +2398,26 @@ GAMP creates `result/<stationname>.pos` with these columns:
 
 ## APPENDIX C — Quick Command Reference 🔴
 
-### GAMP (Windows CMD)
+### GAMP (Windows CMD) — All Research Scenarios
 
 ```cmd
-# PPP Static Multi-GNSS
-"C:\Program Files (x86)\GAMP\GAMP\bin\Windows\gamp.exe" "C:\PPP_PROJECT\GAMP_work\2026015\gamp.cfg"
+set GAMP="C:\Program Files (x86)\GAMP\GAMP\bin\Windows\gamp.exe"
+set WD=C:\PPP_PROJECT\GAMP_work\2026015
+
+rem Scenario A: GPS-only, broadcast (baseline)
+%GAMP% "%WD%\gamp_A_broadcast.cfg"
+
+rem Scenario B: GPS-only, precise IF12
+%GAMP% "%WD%\gamp_B_GPS_IF.cfg"
+
+rem Scenario C: Multi-GNSS GREC, precise UC12 (best GAMP config)
+%GAMP% "%WD%\gamp_C_multiGNSS_UC.cfg"
+
+rem Scenario D: Multi-GNSS + external IONEX GIM
+%GAMP% "%WD%\gamp_D_multiGNSS_GIM.cfg"
 ```
+
+View results: `C:\Program Files\RTKLIB\bin\rtkplot.exe` → File → Open Solution → `C:\PPP_PROJECT\GAMP_work\2026015\result\*.pos`
 
 ### RTKLIB rtkpost (Windows GUI — no command line needed)
 

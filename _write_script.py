@@ -1,4 +1,8 @@
-#!/bin/bash
+#!/usr/bin/env python3
+"""Writes download_test_products.sh with correct content and LF line endings."""
+import os
+
+script = r"""#!/bin/bash
 # Pre-downloads WUM products for all 6 PRIDE PPP-AR test cases.
 # USAGE: bash /mnt/c/PPP_PROJECT/download_test_products.sh
 # Run once before:  bash test.sh
@@ -61,3 +65,14 @@ dl_date 2023 2   2243   # test 6: multipath
 
 echo ""
 echo "Done. Run:  cd '/mnt/c/Program Files (x86)/PRIDE-PPPAR-master/example' && bash test.sh"
+"""
+
+out = "/mnt/c/PPP_PROJECT/download_test_products.sh"
+with open(out, "w", newline="\n") as f:
+    f.write(script)
+
+# Verify
+with open(out, "rb") as f:
+    first3 = f.read(3)
+print(f"Written {os.path.getsize(out)} bytes")
+print(f"First 3 bytes: {first3.hex()} (should be 232f2f -> #!/)")
