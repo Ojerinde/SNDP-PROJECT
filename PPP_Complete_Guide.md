@@ -94,8 +94,10 @@ considered more mathematically flexible than the classic ionosphere-free (IF) co
 
 **Executable:** `C:\Program Files (x86)\GAMP\GAMP\bin\Windows\gamp.exe`
 
-**Output can be viewed in rtkplot.exe** — GAMP's `.pos` output format is fully
-compatible with `C:\Program Files\RTKLIB\bin\rtkplot.exe`.
+**GAMP output CANNOT be opened directly in rtkplot** — GAMP's `.pos` file uses
+ECEF XYZ coordinates (X=-2364338m, Y=4870287m, Z=-3360810m), while rtkplot expects
+lat/lon/height. rtkplot will load the file but show nothing. **Use the provided
+scripts** in `C:\PPP_PROJECT\scripts\` to plot or convert:
 
 #### What is GOOD? (You may have heard "GAMP and GOOD")
 
@@ -426,7 +428,23 @@ C:\PPP_PROJECT\
 
 ---
 
-## PART 5 — STEP-BY-STEP: Using GAMP
+## PART 5 — GAMP (Legacy / Optional Reference)
+
+> **Team note:** For your research experiments, use **RTKLIB** (Part 6) and **PRIDE PPP-AR** (Part 7).
+> GAMP is documented here for reference only. It has been validated on our dataset (2614 epochs,
+> GPS-only IF12 PPP) but has several quirks that make it harder to use than RTKLIB or PRIDE.
+>
+> **Known GAMP limitations in this project:**
+>
+> - Requires RINEX-2 obs (`.26o`) — RINEX-3/4 files have compatibility issues
+> - Requires RINEX-2 broadcast nav (`brdm*.p`) — RINEX-3/4 nav causes `toc` errors
+> - Requires 3 consecutive days of SP3/CLK (day−1, day0, day+1) — GAMP extends its time window ±2.5h past midnight
+> - Requires the old `igs14.atx` — `igs20.atx` fails silently
+> - File naming is rigid: `<ac><week><dow>.sp3` only (e.g., `cod24014.sp3`)
+> - **GAMP pos columns 11–13 (dE, dN, dU) are errors vs `site.crd`** — you must have the correct reference coordinates in `site.crd` for these to be meaningful
+> - Does NOT converge within a single 24-hour session on our test data (ENU oscillates for the full day before settling)
+>
+> Use the wizard if you must run GAMP: `python scripts/run_gamp.py`
 
 ### What GAMP Does (Layman Summary)
 
@@ -842,13 +860,29 @@ to overlay the convergence curves.
 ### What PRIDE Does Differently
 
 PRIDE PPP-AR is the most sophisticated of the three tools. Its specialty is
-PPP with Ambiguity Resolution (PPP-AR). It uses special Phase Bias products
+PPP with Ambiguity Resolution (PPP-AR). It uses special Phase Bias (OSB/FCB) products
 from Wuhan University that allow the software to resolve the integer ambiguities —
 the "blurry photo" problem mentioned earlier — dramatically improving both
 convergence time and accuracy.
 
-PRIDE is a Linux/macOS shell script that calls a series of programs in sequence.
-On Windows, you need **Windows Subsystem for Linux (WSL)** to run it.
+PRIDE is a Linux/macOS pipeline. On Windows, you need **Windows Subsystem for Linux (WSL)**.
+
+> **Current status (as of May 2026):** PRIDE source is at
+> `C:\Program Files (x86)\PRIDE-PPPAR-master\src\` but has **not yet been compiled**.
+> The GUI launcher (`gui\pride_pppar_winGUI.exe`) exists but the core processing binary
+> (`pdp3` → `lsq`, `tedit`, `arsig`, etc.) needs to be built in WSL first.
+> Follow Steps 1–3 below before attempting any runs.
+
+**Why PRIDE is worth the WSL setup effort:**
+
+| Feature               | RTKLIB    | GAMP      | PRIDE PPP-AR |
+| --------------------- | --------- | --------- | ------------ |
+| Float PPP             | ✅        | ✅        | ✅           |
+| PPP-AR                | Limited   | ❌        | ✅ **Best**  |
+| Multi-GNSS            | ✅        | ✅        | ✅           |
+| Auto product download | ❌        | ❌        | ✅ **Auto**  |
+| Convergence time      | 20–40 min | 20–40 min | **2–10 min** |
+| Windows native        | ✅ GUI    | ✅        | WSL only     |
 
 ---
 
@@ -865,6 +899,21 @@ PRIDE PPP-AR runs in a Linux environment. On Windows, you need WSL.
 4. After restart, Ubuntu opens automatically. Create a username and password.
 5. You now have a Linux terminal inside Windows.
 
+**Verify WSL is working:**
+
+```powershell
+# In PowerShell — should print the Ubuntu version
+wsl -- lsb_release -a
+```
+
+**Verify you can see the PRIDE source from WSL:**
+
+```bash
+# In WSL terminal
+ls "/mnt/c/Program Files (x86)/PRIDE-PPPAR-master/src/"
+# Should list: Makefile arsig/ lib/ lsq/ mhm/ orbit/ otl/ redig/ spp/ tedit/ utils/
+```
+
 ---
 
 ### Step 2 — Compile PRIDE PPP-AR
@@ -880,16 +929,33 @@ sudo apt-get install -y build-essential gfortran cmake
 # Note: Windows C: drive is at /mnt/c/ in WSL
 cd "/mnt/c/Program Files (x86)/PRIDE-PPPAR-master/src"
 
-# Build the software
+# Build the software (takes ~2 minutes)
 make
 
-# Install (copies executables to ~/.local/bin or /usr/local/bin)
-# Check Makefile for install target:
-make install
+# The binaries are placed in ../bin/ automatically
+ls ../bin/
+# Should list: lsq  tedit  spp  redig  arsig  mhm  otl  pdp3  ...
 ```
 
-After compilation, you should have programs like: `lsq`, `tedit`, `spp`, `redig`, `arsig`
-These are the processing pipeline stages that `pdp3` calls automatically.
+**Verify the build worked:**
+
+```bash
+# Run the test example
+cd "/mnt/c/Program Files (x86)/PRIDE-PPPAR-master/example"
+bash test.sh
+# Should produce files like kin_2020001_abmf in the results/ folder
+```
+
+**Add pdp3 to your WSL PATH (do once):**
+
+```bash
+echo 'export PATH="/mnt/c/Program Files (x86)/PRIDE-PPPAR-master/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+pdp3 --help   # Should print usage
+```
+
+After compilation, the pipeline stages `lsq`, `tedit`, `spp`, `redig`, `arsig`
+are all called automatically by `pdp3` — you never invoke them directly.
 
 ---
 
@@ -898,17 +964,31 @@ These are the processing pipeline stages that `pdp3` calls automatically.
 ```bash
 cd "/mnt/c/Program Files (x86)/PRIDE-PPPAR-master/example"
 
-# Run the test script
+# Run the test script (auto-downloads products, processes abmf0010.20o)
 bash test.sh
 ```
 
 This will:
 
-1. Download necessary products from the internet automatically
-2. Process the included observation file `abmf0010.20o`
+1. Download necessary products from the internet automatically (needs internet in WSL)
+2. Process the included observation file `abmf0010.20o` (ABMF station, Guadeloupe, 2020-001)
 3. Output results to `results/`
 
-If successful, compare your results folder with `results_ref/`.
+If successful, compare your results folder with `results_ref/`:
+
+```bash
+# These should be nearly identical (within a few mm)
+diff results/ results_ref/
+```
+
+> **Troubleshooting:** If the test fails to download products, PRIDE's auto-download uses
+> IGN FTP, Wuhan FTP, and bdspride FTPS. Check your WSL has internet access:
+>
+> ```bash
+> curl -I https://cddis.nasa.gov  # Should return HTTP 200 or 302
+> ```
+>
+> If blocked, manually place products (see Step 6 product structure) and re-run with `bash test.sh --offline`.
 
 ---
 
@@ -934,24 +1014,34 @@ pdp3 [options] <observation_file.rnx>
 
 ---
 
-### Step 5 — Download Files Automatically with pdp3
+### Step 5 — Does pdp3 auto-download products?
 
-One of PRIDE's best features: it can **download all needed products automatically**
-just by knowing your observation date!
+**YES — pdp3 downloads all needed products automatically** by reading the date from your observation file. This is one of PRIDE's best features.
 
 ```bash
-# Run static PPP-AR with all products downloaded automatically
+# Run static PPP-AR — pdp3 downloads everything it needs
 pdp3 -m S /path/to/your/abmf0010.20o
 ```
 
 When this runs, pdp3 will:
 
 1. Read the date from the observation file
-2. Download the sp3, clk, erp, bias files from `ftps://bdspride.com/wum/`
-3. Find the antenna correction file in the `table/` folder
-4. Process and output results
+2. Check its local product cache at `{working_dir}/{year}/product/common/`
+3. If products are missing, **download from**: IGN FTP (week ≥ 2290), Wuhan FTP, or bdspride.com FTPS
+4. Process and output results into the current working directory
 
-**Results will be in:** a folder named `YYYY/DDD/` in your current directory.
+**For our research data (2026-01-15, GPS week 2401 ≥ 2290):**
+Auto-download works perfectly — no manual steps needed.
+
+**For the PRIDE test cases (2020–2023, GPS week < 2290):**
+pdp3 skips IGN for old dates and may fail to download automatically.
+Use `scripts/download_test_products.sh` to pre-place files (see PRIDE Test Setup below).
+
+**To skip download and use only locally cached products:**
+
+```bash
+pdp3 -m S -offline /path/to/obs.rnx
+```
 
 ---
 
@@ -1000,28 +1090,42 @@ Cutoff elevation   = 15           ← min 15 degrees elevation for AR
 
 ### Step 8 — PRIDE Research Comparison Runs
 
-For your research, run `pdp3` four times on the SAME observation file:
+For your research, run `pdp3` four times on the SAME observation file.
+Work from your PPP_PROJECT directory in WSL:
 
 ```bash
-# Run 1: Float PPP, GPS only
-pdp3 -m S -float -sys g ./data/2020/001/abmf0010.20o
-mv 2020/001 ./results/float_GPS
+# In WSL — navigate to your work folder
+cd /mnt/c/PPP_PROJECT
+mkdir -p PRIDE_work && cd PRIDE_work
+
+# Your obs file is at (RINEX-3 works natively with PRIDE):
+OBS="/mnt/c/PPP_PROJECT/data/ZIM200CHE_R_20260150000_01D_30S_MO.rnx"
+
+# Run 1: Float PPP, GPS only (no ambiguity resolution)
+pdp3 -m S -float -sys G $OBS
+mv 2026/015 ./float_GPS
 
 # Run 2: PPP-AR, GPS only
-pdp3 -m S -sys g ./data/2020/001/abmf0010.20o
-mv 2020/001 ./results/PPPAR_GPS
+pdp3 -m S -sys G $OBS
+mv 2026/015 ./PPPAR_GPS
 
 # Run 3: PPP-AR, GPS + Galileo
-pdp3 -m S -sys ge ./data/2020/001/abmf0010.20o
-mv 2020/001 ./results/PPPAR_GE
+pdp3 -m S -sys GE $OBS
+mv 2026/015 ./PPPAR_GE
 
-# Run 4: PPP-AR, GPS + Galileo + BeiDou
-pdp3 -m S -sys gec ./data/2020/001/abmf0010.20o
-mv 2020/001 ./results/PPPAR_GEC
+# Run 4: PPP-AR, GPS + Galileo + BeiDou (best convergence expected)
+pdp3 -m S -sys GEC $OBS
+mv 2026/015 ./PPPAR_GEC
 ```
 
-The `kin_YYYYDDD_abmf` output file in each folder contains your position time series.
-Compare the convergence curves. You should see PPP-AR converge MUCH faster.
+**What to look at after each run:**
+
+- `kin_20260150000_ZIM2` → per-epoch position time series (main result)
+- `pos_20260150000_ZIM2` → final static position estimate + formal uncertainty
+- `log_20260150000_ZIM2` → processing log (check for errors)
+
+Compare the convergence curves. You should see PPP-AR converge significantly faster than
+float, and multi-GNSS faster than GPS-only.
 
 ---
 
@@ -1049,24 +1153,204 @@ sudo apt install python3-matplotlib python3-numpy
 
 ## PART 8 — Visualizing and Comparing All Results
 
-### Using RTKPLOT to Compare
+<div style="background: #e3f2fd; border-left: 5px solid #1976d2; padding: 10px 16px; margin: 8px 0; border-radius: 4px">
 
-RTKPLOT can read:
+### ⚠️ Important: Format Compatibility
 
-- RTKLIB/GAMP `.pos` files directly
-- PRIDE `kin_` files (after renaming or minor format adjustment)
+| Tool      | Output file       | rtkplot can open?             | How to visualize                                                                 |
+| --------- | ----------------- | ----------------------------- | -------------------------------------------------------------------------------- |
+| RTKLIB    | `.pos`            | ✅ Yes, directly              | File → Open Solution                                                             |
+| RTKLIB-EX | `.pos`            | ✅ Yes, directly              | File → Open Solution                                                             |
+| GAMP      | `.pos`            | ❌ No — ECEF XYZ format       | Use `scripts/plot_gamp_enu.py` or `scripts/gamp2rtkplot.py` to convert first     |
+| PRIDE     | `kin_*` / `pos_*` | ⚠️ Partial — needs conversion | Use `scripts/plot_pride_enu.py --convert-only kin_file`, then open `.rtklib.pos` |
 
-To compare convergence:
-
-1. Open RTKPLOT
-2. File → Open Solution → hold Ctrl and select multiple `.pos` files
-3. View → Plot Type → Position → you'll see all runs overlaid
-4. The plot Y-axis shows position error; X-axis shows time
-5. Watch how quickly each scenario's error drops below ~10 cm
+</div>
 
 ---
 
-## PART 9 — Understanding Your Results (PPP Theory Summary)
+### Visualizing GAMP Results
+
+All scripts are in `C:\PPP_PROJECT\scripts\`. Run from `C:\PPP_PROJECT\`.
+
+#### Step 0: Use run_gamp.py (recommended — handles everything)
+
+Instead of manually copying files and editing configs, use the wizard:
+
+```cmd
+cd C:\PPP_PROJECT
+python scripts/run_gamp.py
+```
+
+The wizard:
+
+1. Lists your obs files from `data/`
+2. Shows 4 scenario choices (A–D) with descriptions
+3. Auto-matches products for the obs file date from `products/`
+4. Creates an isolated run folder: `GAMP_work/runs/<station>_<scenario>_<timestamp>/`
+5. Copies all files, generates `run.cfg`, runs GAMP
+6. Tells you exactly which `plot_gamp_enu.py` command to use on the result
+
+**All runs are preserved** in `GAMP_work/runs/` — each run is self-contained.
+
+#### Option A: Python plot (primary method)
+
+```cmd
+cd C:\PPP_PROJECT
+
+rem Single file — ENU convergence:
+python scripts/plot_gamp_enu.py GAMP_work/result/cut02440.17o.pos
+
+rem Additional plots (white legend, for reports):
+python scripts/plot_gamp_enu.py --scatter GAMP_work/result/cut02440.17o.pos
+python scripts/plot_gamp_enu.py --d3      GAMP_work/result/cut02440.17o.pos
+
+rem All plots at once:
+python scripts/plot_gamp_enu.py --all --no-show GAMP_work/result/cut02440.17o.pos
+
+rem Overlay GPS-only vs multi-GNSS for convergence comparison:
+python scripts/plot_gamp_enu.py --compare GAMP_work/result/cut02440.17o.pos GAMP_work/results_reference/result_GRCE_kin_DF_noGIM_wum/cut02440.17o.pos
+
+rem Summary bar chart across all scenarios:
+python scripts/plot_gamp_enu.py --summary GAMP_work/result/scen_A.pos GAMP_work/result/scen_B.pos GAMP_work/result/scen_C.pos
+```
+
+Outputs saved next to the `.pos` file:
+
+| Flag        | Output file         | Content                                           |
+| ----------- | ------------------- | ------------------------------------------------- |
+| (default)   | `*.pos.png`         | ENU error time series                             |
+| `--scatter` | `*.pos.scatter.png` | E vs N horizontal scatter + RMS circle            |
+| `--d3`      | `*.pos.3d.png`      | 3D error + horizontal error over time             |
+| `--summary` | `*/summary_bar.png` | Convergence time + RMS bar chart across scenarios |
+| `--all`     | all above           | Everything at once                                |
+| (always)    | `*.pos.stats`       | Text statistics summary                           |
+
+#### Option B: Convert to rtkplot format, then open in rtkplot
+
+```cmd
+cd C:\PPP_PROJECT
+
+rem Convert single file:
+python scripts/gamp2rtkplot.py GAMP_work/result/cut02440.17o.pos
+
+rem Convert all .pos files in a folder:
+python scripts/gamp2rtkplot.py GAMP_work/result/
+
+rem Convert and auto-open in rtkplot:
+python scripts/gamp2rtkplot.py --open GAMP_work/result/cut02440.17o.pos
+```
+
+This creates `*.rtklib.pos` files. In rtkplot:
+
+1. File → Open Solution 1 → select the `.rtklib.pos` file
+2. Plot Type → **"Position"**
+3. E/N/U errors will be displayed as sdn/sde/sdu columns
+
+#### Option C: MATLAB (original GAMP tool)
+
+The GAMP distribution includes MATLAB plotting scripts in:
+`C:\Program Files (x86)\GAMP\GAMP\Tools\MatPlot\`
+
+If you have MATLAB:
+
+```matlab
+% In MATLAB:
+cd('C:\PPP_PROJECT\GAMP_work')
+addpath('C:\Program Files (x86)\GAMP\GAMP\Tools\MatPlot')
+Plot_PPP_result('result/cut02440.17o')   % without .pos extension
+```
+
+This produces plots identical to the reference JPGs in `results_reference\*\plot\jpg\`.
+For most purposes the Python script (Option A) is equivalent and doesn't require MATLAB.
+
+---
+
+### Visualizing PRIDE PPP-AR Results
+
+PRIDE produces these output files after running `pdp3`:
+
+| File                  | Content                              | Use for                            |
+| --------------------- | ------------------------------------ | ---------------------------------- |
+| `kin_YYYYDDD_station` | Per-epoch position (lat/lon/ECEF)    | **Main result** — convergence plot |
+| `pos_YYYYDDD_station` | Final static position + uncertainty  | Final accuracy figure              |
+| `ztd_YYYYDDD_station` | Zenith troposphere delay time series | Troposphere analysis               |
+| `res_YYYYDDD_station` | Post-fit residuals per satellite     | Outlier/quality check              |
+| `rck_YYYYDDD_station` | Receiver clock estimates             | Clock analysis                     |
+| `amb_YYYYDDD_station` | Ambiguity parameters                 | AR success check                   |
+
+#### Plot PRIDE kin\_ convergence:
+
+```cmd
+rem From Windows CMD (run from C:\PPP_PROJECT):
+cd C:\PPP_PROJECT
+python scripts\plot_pride_enu.py PRIDE_work\kin_20260150000_hkws
+
+rem Additional plots:
+python scripts\plot_pride_enu.py --scatter  PRIDE_work\kin_20260150000_hkws
+python scripts\plot_pride_enu.py --nsat     PRIDE_work\kin_20260150000_hkws
+
+rem All plots at once:
+python scripts\plot_pride_enu.py --all --no-show  PRIDE_work\kin_20260150000_hkws
+
+rem Or from WSL:
+python /mnt/c/PPP_PROJECT/scripts/plot_pride_enu.py  kin_20260150000_hkws
+
+rem Compare float vs AR fixed:
+python scripts\plot_pride_enu.py --compare kin_20260150000_hkws_float kin_20260150000_hkws_fixed
+
+rem Summary bar chart across scenarios:
+python scripts\plot_pride_enu.py --summary kin_float kin_fixed kin_gec
+
+rem Print static result (final accuracy):
+python scripts\plot_pride_enu.py --pos  pos_20260150000_hkws
+
+rem Convert to rtkplot format only:
+python scripts\plot_pride_enu.py --convert-only  kin_20260150000_hkws
+```
+
+Available plot flags for PRIDE:
+
+| Flag             | Output                | Content                                |
+| ---------------- | --------------------- | -------------------------------------- |
+| (default)        | `kin_*.png`           | ENU error time series                  |
+| `--scatter`      | `kin_*.scatter.png`   | E vs N horizontal scatter + RMS circle |
+| `--nsat`         | `kin_*.nsat_pdop.png` | N satellites tracked + PDOP over time  |
+| `--summary`      | `*/summary_bar.png`   | Convergence time + RMS bar chart       |
+| `--all`          | all above             | Everything at once                     |
+| `--convert-only` | `kin_*.rtklib.pos`    | rtkplot-compatible file (no plot)      |
+
+The script automatically computes ENU errors vs. the known ITRF2020 coordinates
+for HKWS and ZIM2 (already built into the script). For other stations, add them
+to the `KNOWN_REF` dict in `scripts/plot_pride_enu.py`.
+
+#### Open PRIDE result in rtkplot:
+
+After running `--convert-only` (or any plot command which also auto-converts):
+
+1. Open `C:\Program Files\RTKLIB\bin\rtkplot.exe`
+2. File → Open Solution 1 → select `kin_*.rtklib.pos`
+3. Plot Type → **"Position"** — shows E/N/U errors vs time
+4. Overlay GAMP and PRIDE by also opening the GAMP `.rtklib.pos` as Solution 2
+
+---
+
+### RTKLIB / RTKLIB-EX — Already Native rtkplot Format
+
+RTKLIB and RTKLIB-EX `.pos` output is already in rtkplot's native format:
+
+1. Open `C:\Program Files\RTKLIB\bin\rtkplot.exe`
+2. File → Open Solution 1 (or drag-and-drop the `.pos` file)
+3. Plot Type → **"Position"** — immediate ENU convergence display
+4. File → Open Solution 2 for comparison overlay
+
+For the reference position: Edit → Options → set known lat/lon/height:
+
+- HKWS: Lat 22.272200° Lon 114.161400° Height 72.0 m
+- ZIM2: Lat 46.877200° Lon 7.465200° Height 956.0 m
+
+---
+
+## PART 9 — Understanding Your Results: Convergence and Verification
 
 ### What "Convergence" Means on a Graph
 
@@ -1087,6 +1371,98 @@ Error
 
 The slow decay from ~5 meters down to ~20 cm takes 20–40 minutes for GPS-only PPP.
 That's convergence time. After convergence, the position settles to its final accuracy.
+
+---
+
+### How to Verify Your PPP Results
+
+You need a **reference ("true") position** to compute the error. For IGS stations
+like ZIM2 and HKWS, highly accurate coordinates are published weekly in SINEX files.
+
+**Method 1 — Compare to SINEX/IGS reference (most rigorous)**
+
+The SINEX file downloaded by `download_gamp_data.py` contains the IGS-computed
+coordinates for that exact day:
+
+```bash
+# From the SINEX file MIT0OPSSNX_2026015_SOL.SNX, ZIM2 2026/015:
+# X = 4331299.7091  Y = 567537.7486  Z = 4633133.8374  (ITRF2020)
+```
+
+These are the authoritative reference coordinates. If your PPP estimate matches
+these to within 5–10 cm, you have good float PPP. Within 2–3 cm = excellent.
+
+> ⚠️ **Important:** The GAMP `site.crd` file in the run wizard uses the coordinates
+> from the `KNOWN_REFS` dictionary in `scripts/run_gamp.py`. The ZIM2 entry was initially
+> set to an old ITRF2020 epoch value that differs from the 2026 SINEX by ~18 m in Y
+> (wrong longitude). This means GAMP's reported dE/dN/dU in the `.pos` file do NOT
+> reflect the true error. Always verify against the SINEX reference independently.
+
+**Method 2 — Check if the solution converged (visual)**
+
+1. Plot ENU error vs time using `python scripts/plot_gamp_enu.py` (GAMP) or
+   `python scripts/plot_pride_enu.py` (PRIDE)
+2. Look for the position to stabilize — flat line after ~30 min
+3. If the East/North/Up is still trending or oscillating after 2 hours, convergence failed
+
+**Definition of convergence used in this project:**
+
+- Horizontal error (2D: √(E²+N²)) < 10 cm AND
+- Vertical error |U| < 20 cm AND
+- Both maintained for at least 10 consecutive minutes
+
+**Method 3 — Compare the ECEF estimate to the SINEX ECEF reference**
+
+For PRIDE, after running `pdp3 -m S`, read the `pos_YYYYDDD_station` file:
+
+```
+# pos file format: STA  X(m)  Y(m)  Z(m)  sX  sY  sZ
+```
+
+Subtract the SINEX reference to get dX, dY, dZ. Convert to dE/dN/dU using the
+local rotation matrix at the station latitude/longitude.
+
+**ZIM2 reference coordinates (2026/015, SINEX ITRF2020):**
+
+| Parameter | Value          |
+| --------- | -------------- |
+| X         | 4331299.7091 m |
+| Y         | 567537.7486 m  |
+| Z         | 4633133.8374 m |
+| Latitude  | 46.8771° N     |
+| Longitude | 7.4650° E      |
+| Height    | 956.4 m        |
+
+**HKWS reference coordinates (2026/015):**
+
+Extract from SINEX or use the IGS published value:
+
+- Latitude ≈ 22.2722° N, Longitude ≈ 114.1614° E, Height ≈ 72.0 m
+
+---
+
+### Is >24h Convergence Normal for GAMP?
+
+For our test run (ZIM2, GPS-only, Scenario B), the ENU plot shows the solution
+continuously drifting for the full 24-hour day before approaching the reference:
+
+```
+dE at  0h:  +2.1 m   (just started, very wrong)
+dE at  8h:  -1.6 m   (large residual East bias persists)
+dE at 16h:  -1.2 m   (still 1.2 m off)
+dE at 24h:  ~0.0 m   (finally near reference at end of day)
+```
+
+This is **not typical PPP convergence** — it's a sign of a systematic issue:
+
+- **Likely cause:** Missing DCB (Differential Code Bias) files. GAMP warned
+  `P1-P2 DCB file NOT found` and `P1-C1 DCB file NOT found`. Without DCBs,
+  systematic biases remain unmodelled, causing slow drift especially in East.
+- The 2017 BSX DCB file in `GAMP_work/` is outdated for 2026 data.
+  Getting 2026 DCB files from CDDIS (`CAS0MGXRAP_2026015_...DCB.BSX`) would likely fix this.
+
+**For comparison:** RTKLIB with proper DCB/bias products and PRIDE PPP-AR should
+achieve convergence within 20–40 min (float) or 5–15 min (PPP-AR).
 
 ### Why Multi-GNSS Converges Faster
 
@@ -1147,15 +1523,23 @@ More observations mean the filter has more equations to solve those unknowns fas
 
 ## PART 11 — Summary: Which Tool for Which Task?
 
-| Task                                     | Best Tool                    |
-| ---------------------------------------- | ---------------------------- |
-| Learning PPP basics with GUI             | RTKLIB / RTKPOST             |
-| Comparing broadcast vs. precise products | GAMP (easy config switching) |
-| GPS-only vs. multi-GNSS comparison       | GAMP (`navsys` parameter)    |
-| Fastest convergence / PPP-AR             | PRIDE PPP-AR                 |
-| Visualizing results                      | RTKPLOT                      |
-| Downloading IGS products                 | RTKGET (GUI)                 |
-| Batch processing many stations           | GAMP or PRIDE                |
+| Task                                     | Best Tool                         | Notes                                           |
+| ---------------------------------------- | --------------------------------- | ----------------------------------------------- |
+| Learning PPP basics with GUI             | **RTKLIB / RTKPOST**              | Windows GUI, no setup needed                    |
+| Comparing broadcast vs. precise products | **RTKLIB** or PRIDE               | Easy mode switching in RTKPOST                  |
+| GPS-only vs. multi-GNSS comparison       | **RTKLIB** or **PRIDE**           | Both support multi-GNSS                         |
+| Float PPP, best accuracy (no AR)         | **RTKLIB** or **PRIDE -float**    |                                                 |
+| PPP with Ambiguity Resolution            | **PRIDE PPP-AR**                  | Best convergence, needs WSL                     |
+| Visualizing / comparing results          | **RTKPLOT**                       | Native RTKLIB format                            |
+| Downloading IGS products                 | `download_gamp_data.py` or RTKGET | Script supports batch download                  |
+| Checking result accuracy                 | Compare to SINEX reference        | ITRF2020 from MIT0OPSSNX\_\*.SNX                |
+| GAMP (GPS-only IF12 PPP)                 | `python scripts/run_gamp.py`      | Works but needs DCB fix for convergence; legacy |
+
+**Recommended workflow for your research:**
+
+1. Run RTKLIB (RTKPOST) first — GUI, quick, good enough for broadcast vs. precise comparison
+2. Run PRIDE PPP-AR — for PPP-AR vs float and multi-GNSS comparison
+3. Plot everything in RTKPLOT — overlay the `.pos` files for visual comparison
 
 ---
 
@@ -1165,33 +1549,45 @@ Based on your discussion with your team, here are the concrete experiments to ru
 
 ### Experiment 1: Broadcast vs. Precise Products
 
-- Tool: GAMP
-- Settings: `posmode=7`, `navsys=1`, vary `sp3/clk` files
-- Measure: Final position accuracy (RMS of last 2 hours of data)
+- **Tool:** RTKLIB (RTKPOST)
+- **Obs file:** `ZIM200CHE_R_20260150000_01D_30S_MO.rnx` or `zim20150.26o`
+- **Run A:** Positioning Mode=PPP-Static, Ephemeris=Broadcast (`brdm0150.26p` only)
+- **Run B:** Positioning Mode=PPP-Static, Ephemeris=Precise (SP3 + CLK from `products/`)
+- **Measure:** RMS of position error in last 2 hours; time to reach 10 cm horizontal
+- **Expected:** Broadcast ~1–5 m; Precise ~5–15 cm
 
 ### Experiment 2: GPS-only vs. Multi-GNSS
 
-- Tool: GAMP
-- Settings: Same precise products; vary `navsys=1` vs `navsys=45`
-- Measure: Convergence time (time to reach 10 cm accuracy)
+- **Tool:** RTKLIB (RTKPOST) or PRIDE PPP-AR
+- **Settings:** Same precise products; vary satellite systems
+  - RTKLIB: Options → Setting 1 → Satellite System: [GPS only] vs [GPS+GAL+BDS]
+  - PRIDE: `pdp3 -m S -sys G` vs `pdp3 -m S -sys GEC`
+- **Measure:** Convergence time (minutes to reach 10 cm horizontal)
+- **Expected:** GPS-only ~25–40 min; GPS+GAL+BDS ~8–15 min
 
-### Experiment 3: Error Correction Method Comparison
+### Experiment 3: Float PPP vs. PPP-AR
 
-- Tool: GAMP
-- Settings: Vary `ionoopt`: 2 (IF) vs 4 (UC12) vs 5 (with IONEX GIM)
-- Measure: Position accuracy and convergence behavior
+- **Tool:** PRIDE PPP-AR
+- **Run A:** `pdp3 -m S -float -sys GEC obs.rnx` (float only, no ambiguity resolution)
+- **Run B:** `pdp3 -m S -sys GEC obs.rnx` (PPP-AR enabled)
+- **Measure:** Convergence time, final RMS, fraction of epochs with fixed ambiguities
+- **Expected:** Float ~15–25 min; PPP-AR ~3–8 min
 
-### Experiment 4: Session Length for Convergence
+### Experiment 4: Error Correction Method
 
-- Tool: RTKLIB or GAMP
-- Settings: Process 24h data; take 1h, 2h, 4h, 8h, 24h subsets
-- Measure: Accuracy as function of session length
+- **Tool:** RTKLIB or PRIDE
+- **Vary:** Whether to use ionosphere-free combination (IF) vs uncombined + ionosphere model
+  - RTKLIB: Options → Setting 1 → Ionosphere Correction → [Broadcast] vs [None (dual-freq IF)]
+  - PRIDE: `-sys G -float` (uses UC PPP) vs RTKLIB IF12
+- **Measure:** Position accuracy and convergence at different corrections
 
-### Experiment 5: Float PPP vs. PPP-AR
+### Experiment 5: Session Length Effect on Convergence
 
-- Tool: PRIDE PPP-AR
-- Settings: `-float` vs default (AR enabled)
-- Measure: Convergence time, final accuracy, ambiguity fixing rate
+- **Tool:** RTKLIB (easy with partial file processing) or PRIDE
+- **Settings:** Process the same 24h file but with different end times: 1h, 2h, 4h, 8h, 24h
+  - RTKLIB: Options → Setting 1 → Time Start/End to cut the session
+- **Measure:** Final accuracy as a function of observation session length
+- **Expected:** After 1h, still not fully converged; after 4–8h, approaching cm-level
 
 ---
 
@@ -1806,23 +2202,35 @@ The current test.sh output shows:
 - ✅ Table directory: `/tmp/pride/table`
 - ✅ Executables all found
 - ✅ Broadcast nav downloads (BRDC00IGS_R files)
-- ❌ WUM SP3/CLK download fails via FTP (Wuhan server timeout)
+- ❌ WUM SP3/CLK download fails via FTP — **"unexpected end of file"** from gunzip
 
 **Root cause:** The PRIDE test data uses dates in 2020–2023 (GPS weeks 2086–2243).
 In `pdp3.sh`, the IGN FTP fallback is **hardcoded to only work for GPS week ≥ 2290**.
-So for test dates, only the Wuhan FTP is tried — which times out.
+So for test dates, only the Wuhan FTP is tried — which either times out or returns
+a partial file. The partial `.gz` file then fails the `gunzip` step with the error:
 
-**Fix: Run the pre-download script FIRST:**
-
-```bash
-# In WSL terminal:
-cd "/mnt/c/Program Files (x86)/PRIDE-PPPAR-master/example"
-bash download_test_products.sh    # downloads via CDDIS HTTPS
-bash test.sh                      # now products are cached, FTP skipped
+```
+gzip: WUM0MGXRAP_20200010000_01D_05M_ORB.SP3.gz: unexpected end of file
+  FAILED: SP3
 ```
 
-After `download_test_products.sh` succeeds, the products are cached in
-`<example>/<year>/product/common/` and pdp3 uses them directly without FTP.
+**Fix: Use `scripts/download_test_products.sh` to pre-download BEFORE running test.sh:**
+
+```bash
+# In WSL — pre-download with 3-source fallback and gz integrity check:
+bash /mnt/c/PPP_PROJECT/scripts/download_test_products.sh
+
+# Then run the official test:
+cd "/mnt/c/Program Files (x86)/PRIDE-PPPAR-master/example"
+bash test.sh
+```
+
+`download_test_products.sh` improvements over the naive approach:
+
+1. **Three-source fallback**: IGN FTP → Wuhan MGEX → Wuhan phasebias
+2. **gz integrity check**: `gunzip -t` validates the file before decompressing — no more corrupt partial-file failures
+3. **Clean retry**: deletes partial file before each retry (avoids corrupt+append)
+4. Files cached in `<example>/<year>/product/common/` — test.sh uses cached files
 
 ### Running PRIDE on Your Real Data (2026-01-15, HKWS and ZIM2)
 
@@ -2281,7 +2689,13 @@ set WD=C:\PPP_PROJECT\GAMP_work\2026015
 ```
 
 Each run takes ~1–5 minutes. Results go to `result\` subfolder.
-Then open all `.pos` files in rtkplot for comparison.
+Then visualize with the Python scripts (GAMP .pos is **not** readable directly by rtkplot):
+
+```cmd
+cd C:\PPP_PROJECT\GAMP_work
+python scripts/plot_gamp_enu.py --no-show result/HKWS00HKG_R_20260150000_01D_30S_MO.pos
+python scripts/gamp2rtkplot.py --open result/HKWS00HKG_R_20260150000_01D_30S_MO.pos
+```
 
 ---
 
@@ -2398,26 +2812,69 @@ GAMP creates `result/<stationname>.pos` with these columns:
 
 ## APPENDIX C — Quick Command Reference 🔴
 
-### GAMP (Windows CMD) — All Research Scenarios
+### GAMP — Recommended Workflow (Wizard)
+
+```cmd
+cd C:\PPP_PROJECT
+python scripts/run_gamp.py
+```
+
+The wizard guides you through:
+
+- Selecting obs file from `data/`
+- Choosing scenario A/B/C/D with descriptions
+- Auto-matching products from `products/` for the correct date
+- Creating an isolated run folder: `GAMP_work/runs/<station>_<scenario>_<timestamp>/`
+- Running GAMP and reporting results
+
+Each run is **self-contained and preserved** in its own folder.
+
+### GAMP — Manual Run (if needed)
 
 ```cmd
 set GAMP="C:\Program Files (x86)\GAMP\GAMP\bin\Windows\gamp.exe"
 set WD=C:\PPP_PROJECT\GAMP_work\2026015
 
-rem Scenario A: GPS-only, broadcast (baseline)
 %GAMP% "%WD%\gamp_A_broadcast.cfg"
-
-rem Scenario B: GPS-only, precise IF12
 %GAMP% "%WD%\gamp_B_GPS_IF.cfg"
-
-rem Scenario C: Multi-GNSS GREC, precise UC12 (best GAMP config)
 %GAMP% "%WD%\gamp_C_multiGNSS_UC.cfg"
-
-rem Scenario D: Multi-GNSS + external IONEX GIM
 %GAMP% "%WD%\gamp_D_multiGNSS_GIM.cfg"
 ```
 
-View results: `C:\Program Files\RTKLIB\bin\rtkplot.exe` → File → Open Solution → `C:\PPP_PROJECT\GAMP_work\2026015\result\*.pos`
+### GAMP — Visualize Results
+
+```cmd
+cd C:\PPP_PROJECT
+
+rem ENU convergence (default):
+python scripts/plot_gamp_enu.py GAMP_work/runs/<run>/result/<station>.pos
+
+rem All plot types at once (for report):
+python scripts/plot_gamp_enu.py --all --no-show GAMP_work/runs/<run>/result/<station>.pos
+
+rem Scenario comparison bar chart:
+python scripts/plot_gamp_enu.py --summary --no-show ^
+  GAMP_work/runs/HKWS_A_*/result/*.pos ^
+  GAMP_work/runs/HKWS_C_*/result/*.pos
+
+rem Convert to rtkplot format:
+python scripts/gamp2rtkplot.py GAMP_work/runs/<run>/result/<station>.pos
+python scripts/gamp2rtkplot.py --open GAMP_work/result/HKWS00HKG_R_20260150000_01D_30S_MO.pos
+
+rem --- Option C: MATLAB (if available) ---
+rem cd to GAMP_work, then in MATLAB:
+rem   addpath('C:\Program Files (x86)\GAMP\GAMP\Tools\MatPlot')
+rem   Plot_PPP_result('result/HKWS00HKG_R_20260150000_01D_30S_MO')
+```
+
+### GAMP — rtkplot after conversion
+
+```
+Open: C:\Program Files\RTKLIB\bin\rtkplot.exe
+  File → Open Solution 1 → result\HKWS00HKG_R_20260150000_01D_30S_MO.pos.rtklib.pos
+  Plot Type: "Position"   (shows ENU errors in sdn/sde/sdu)
+  For comparison: File → Open Solution 2 → ZIM2 or reference file
+```
 
 ### RTKLIB rtkpost (Windows GUI — no command line needed)
 
@@ -2454,6 +2911,38 @@ pdp3 -m S -sys gec --config /tmp/pride_config.cfg \
 # Float PPP (no AR) for comparison:
 pdp3 -m S -float -sys gec --config /tmp/pride_config.cfg \
   /mnt/c/PPP_PROJECT/data/HKWS00HKG_R_20260150000_01D_30S_MO.rnx
+```
+
+### PRIDE — Visualize Results
+
+PRIDE's `kin_` files contain lat/lon/height per epoch. Use the Python script to plot and convert:
+
+```bash
+# From WSL (run from the directory where kin_ files are created, e.g. PRIDE_work):
+cd /mnt/c/PPP_PROJECT/PRIDE_work
+
+# Plot single kin_ file (ENU convergence):
+python /mnt/c/PPP_PROJECT/scripts/plot_pride_enu.py  kin_20260150000_hkws
+
+# Compare float vs AR fixed:
+python /mnt/c/PPP_PROJECT/scripts/plot_pride_enu.py --compare \
+  kin_20260150000_hkws_float  kin_20260150000_hkws
+
+# Print static pos_ result (final position + accuracy):
+python /mnt/c/PPP_PROJECT/scripts/plot_pride_enu.py --pos  pos_20260150000_hkws
+
+# Convert to rtkplot format (creates kin_20260150000_hkws.rtklib.pos):
+python /mnt/c/PPP_PROJECT/scripts/plot_pride_enu.py --convert-only  kin_20260150000_hkws
+```
+
+```cmd
+rem From Windows CMD:
+cd C:\PPP_PROJECT\PRIDE_work
+python C:\PPP_PROJECT\scripts\plot_pride_enu.py  kin_20260150000_hkws
+
+rem Then open in rtkplot:
+rem   File → Open Solution 1 → kin_20260150000_hkws.rtklib.pos
+rem   Plot Type → "Position"
 ```
 
 ### Python Download Script

@@ -1,0 +1,13 @@
+# PPP_PROJECT — Python dependencies
+# Install with:  pip install -r requirements.txt
+
+# Plotting and numerical analysis (plot_gamp_enu.py, gamp2rtkplot.py, plot_pride_enu.py)
+matplotlib>=3.10.3
+numpy>=2.2.6
+
+# GNSS product / observation file downloads (download_ppp_data.py)
+requests>=2.33.1
+
+# All other imports (argparse, datetime, gzip, hashlib, math, os,
+# pathlib, re, shutil, subprocess, sys, time) are part of the
+# Python standard library and need no installation.
