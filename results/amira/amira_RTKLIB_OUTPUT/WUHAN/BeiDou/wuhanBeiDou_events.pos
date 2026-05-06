@@ -1,0 +1,19 @@
+% program   : RTKPOST ver.demo5 b34d
+% inp file  : F:\gnss\GAMP_WORK\input\obs\RNXDATA\WUH200CHN_R_20260150000_01D_30S_MO.obs
+% inp file  : F:\gnss\GAMP_WORK\input\nav\BRDC00IGS_R_20260150000_01D_MN.nav
+% inp file  : F:\gnss\GAMP_WORK\input\DATA_FINAL_ANT_EXTRA\COD0MGXFIN_20260150000_01D_30S_CLK.CLK
+% inp file  : F:\gnss\GAMP_WORK\input\DATA_FINAL_ANT_EXTRA\COD0MGXFIN_20260150000_01D_05M_ORB.SP3
+% obs start : 2026/01/15 00:00:00.0 GPST (week2401 345600.0s)
+% obs end   : 2026/01/15 23:59:30.0 GPST (week2401 431970.0s)
+% pos mode  : PPP Static
+% solution  : Combined-Phase Reset
+% elev mask : 10.0 deg
+% dynamics  : off
+% tidecorr  : on
+% tropo opt : Estimate ZTD
+% ephemeris : Precise
+% navi sys  : BDS
+% antenna1  : JAVRINGANT_G5T  NONE  ( 0.0000  0.0000  0.1206)
+%
+% (lat/lon/height=WGS84/geodetic,Q=1:fix,2:float,3:sbas,4:dgps,5:single,6:ppp,ns=# of satellites)
+%  GPST                  latitude(deg) longitude(deg)  height(m)   Q  ns   sdn(m)   sde(m)   sdu(m)  sdne(m)  sdeu(m)  sdun(m) age(s)  ratio

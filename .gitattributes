@@ -1,0 +1,2 @@
+results/**/*.trace filter=lfs diff=lfs merge=lfs -text
+results/**/*.rnx filter=lfs diff=lfs merge=lfs -text
