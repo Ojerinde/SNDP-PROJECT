@@ -24,8 +24,8 @@ Usage:
     python check_station.py --list --gps-only            # GPS-only stations
 
 Requirements:
-    - Status files at: C:\\PPP_PROJECT\\products\\status\\
-    - Observation files at: C:\\PPP_PROJECT\\data\\
+    - Status files at: C:\\PPP_PROJECT\\Old_data\\products\\status\\
+    - Observation files at: C:\\PPP_PROJECT\\Old_data\\data\\
     - Outputs saved to: C:\\PPP_PROJECT\\station_reports\\
 
 Output:
@@ -899,26 +899,15 @@ def main():
                         help="Path to 26015_status.txt")
     parser.add_argument("--v3",     default=None,
                         help="Path to 26015_V3status.txt")
-    parser.add_argument("--outdir", default=str(Path(__file__).parent / "station_reports"),
+    parser.add_argument("--outdir", default=str(Path(__file__).resolve().parent.parent / "station_reports"),
                         help="Output folder for .md reports")
     args = parser.parse_args()
 
-    script_dir = Path(__file__).parent
+    script_dir = Path(__file__).resolve().parent
+    root_dir = script_dir.parent   # C:\PPP_PROJECT
 
-    def find_file(given, *candidates):
-        if given and Path(given).exists():
-            return Path(given)
-        for c in candidates:
-            p = script_dir / c
-            if p.exists():
-                return p
-            p2 = Path(c)
-            if p2.exists():
-                return p2
-        return None
-
-    # Also search in products/status relative to the script
-    status_dir = Path(__file__).parent / "products" / "status"
+    # Status files live in Old_data/products/status/ relative to project root
+    status_dir = root_dir / "Old_data" / "products" / "status"
 
     def find_file_extended(given, *names):
         if given and Path(given).exists():
@@ -932,9 +921,9 @@ def main():
         return None
 
     v2_path = find_file_extended(args.v2,
-        "26015_status.txt", "26015.status.txt", "26015.status")
+                                 "26015_status.txt", "26015.status.txt", "26015.status")
     v3_path = find_file_extended(args.v3,
-        "26015_V3status.txt", "26015.V3status.txt", "26015.V3status")
+                                 "26015_V3status.txt", "26015.V3status.txt", "26015.V3status")
 
     v2_data, v3_data = {}, {}
     if v2_path:

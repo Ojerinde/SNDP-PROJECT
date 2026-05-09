@@ -1,0 +1,371 @@
+===> Checking executables finished
+:: Processing date range: 2026 01 15 -- 2026 01 15
+:: Control file: C:/Users/Joel/.PRIDE_PPPAR_config/config_template
+:: AR switch: N
+:: RINEX directory: C:/PPP_PROJECT/PRIDE_work/runs/HKWS_run
+:: RINEX observation file: C:/PPP_PROJECT/PRIDE_work/runs/HKWS_run/HKWS00HKG_R_20260150000_01D_30S_MO.rnx
+===> ProcessSingleSession time: 2026-01-15 00:00:0.0000000 - 23:59:30.0000000 
+===> PrepareTables ...
+===> PrepareTables finished
+===> PrepareProducts ...
+:: Preparing IGS ANTEX product ...
+:: Preparing IGS ANTEX product igs20_2401.atx ...
+:: Prepare IGS ANTEX product: igs20_2401.atx finished
+(2026-05-09 09:38:49) sp3orb COD0MGXFIN_20260150000_01D_05M_ORB.SP3 -cfg config_2026015_HKWS execution ok
+===> PrepareProducts finished
+===> Prepare initial position HKWS...
+(2026-05-09 09:39:06) spp -trop saas -ts 2026/01/15 00:00:0.0000000 -te 2026/01/15 23:59:30.0000000 -ti 30.00 C:/PPP_PROJECT/PRIDE_work/runs/HKWS_run/HKWS00HKG_R_20260150000_01D_30S_MO.rnx C:/PPP_PROJECT/PRIDE_work/runs/HKWS_run/nav/brdm0150.26p execution ok
+===> Prepare initial position HKWS finished
+===> ProcessSingleSite 2026 015 HKWS ...
+===> Data pre-processing
+(2026-05-09 09:39:14) tedit C:/PPP_PROJECT/PRIDE_work/runs/HKWS_run/HKWS00HKG_R_20260150000_01D_30S_MO.rnx -time 2026 01 15 0 0 0.00 -len 86370.00 -int 30 -xyz -2430580.5017 5374287.1468 2418957.3240 -short 1200 -lc_check only -rhd log_2026015_HKWS -pc_check 300 -elev 7 -rnxn C:/PPP_PROJECT/PRIDE_work/runs/HKWS_run/nav/brdm0150.26p execution ok
+===> Data pre-processing finished
+===> Data cleaning...
+(2026-05-09 09:39:31) lsq config_2026015_HKWS C:/PPP_PROJECT/PRIDE_work/runs/HKWS_run/HKWS00HKG_R_20260150000_01D_30S_MO.rnx execution ok
+(2026-05-09 09:39:33) redig res_2026015 -jmp 400 -sht 20 execution ok
+%%%+RMS OF RESIDUALS---PHASE(MM)
+G01 G02 G03 G04 G05 G06 G07 G08 G09 G10 G11 G12 G13 G14 G15 G16 G17 G18 G19 G21 G22 G23 G24 G25 G26 G27 G28 G29 G30 G31 G32
+ 25  20  11  10   7   7  10  10  24   7   7  10   8  12   6   6   6   7   8   7   7   6   7   8   6   8   6   8  69   6   7
+E02 E03 E04 E05 E06 E07 E08 E09 E10 E11 E12 E13 E15 E19 E21 E23 E25 E26 E27 E29 E30 E31 E33 E34 E36
+  8   5  88  14   9   6   4  11   7   9  11   5   6   6   7   5   7   7   8   9   6   9  11   6   6
+%%%-RMS OF RESIDUALS---PHASE(MM)
+Newly removed observations   29  0.06%
+Newly inserted ambiguities   6  7.50%
+(2026-05-09 09:40:02) lsq config_2026015_HKWS C:/PPP_PROJECT/PRIDE_work/runs/HKWS_run/HKWS00HKG_R_20260150000_01D_30S_MO.rnx execution ok
+(2026-05-09 09:40:06) redig res_2026015 -jmp 200 -sht 20 execution ok
+%%%+RMS OF RESIDUALS---PHASE(MM)
+G01 G02 G03 G04 G05 G06 G07 G08 G09 G10 G11 G12 G13 G14 G15 G16 G17 G18 G19 G21 G22 G23 G24 G25 G26 G27 G28 G29 G30 G31 G32
+  7   9  11   8   7   7  10  10   9   7   7  10   8  13   6   7   6   7   8   6   7   6   7   8   6   8   6   8  12   6   7
+E02 E03 E04 E05 E06 E07 E08 E09 E10 E11 E12 E13 E15 E19 E21 E23 E25 E26 E27 E29 E30 E31 E33 E34 E36
+  8   5   4   7   7   6   4   9   5   9  11   5   6   6   7   5   7   8   8   9   6   8  11   5   6
+%%%-RMS OF RESIDUALS---PHASE(MM)
+Newly removed observations   20  0.04%
+Newly inserted ambiguities   0  0.00%
+(2026-05-09 09:40:35) lsq config_2026015_HKWS C:/PPP_PROJECT/PRIDE_work/runs/HKWS_run/HKWS00HKG_R_20260150000_01D_30S_MO.rnx execution ok
+(2026-05-09 09:40:38) redig res_2026015 -jmp 100 -sht 20 execution ok
+%%%+RMS OF RESIDUALS---PHASE(MM)
+G01 G02 G03 G04 G05 G06 G07 G08 G09 G10 G11 G12 G13 G14 G15 G16 G17 G18 G19 G21 G22 G23 G24 G25 G26 G27 G28 G29 G30 G31 G32
+  7   9  11   8   7   7  10  10   9   7   7  10   8  13   6   7   6   7   8   6   7   6   7   8   6   8   6   8  12   6   7
+E02 E03 E04 E05 E06 E07 E08 E09 E10 E11 E12 E13 E15 E19 E21 E23 E25 E26 E27 E29 E30 E31 E33 E34 E36
+  8   5   4   7   7   6   4   9   5   9  11   5   6   6   7   5   7   8   8   9   6   8  11   5   6
+%%%-RMS OF RESIDUALS---PHASE(MM)
+Newly removed observations   0  0.00%
+Newly inserted ambiguities   0  0.00%
+(2026-05-09 09:40:40) redig res_2026015 -jmp 50 -sht 20 execution ok
+%%%+RMS OF RESIDUALS---PHASE(MM)
+G01 G02 G03 G04 G05 G06 G07 G08 G09 G10 G11 G12 G13 G14 G15 G16 G17 G18 G19 G21 G22 G23 G24 G25 G26 G27 G28 G29 G30 G31 G32
+  7   9  11   8   7   7  10  10   9   7   7  10   8  13   6   7   6   7   8   6   7   6   7   8   6   8   6   8  12   6   7
+E02 E03 E04 E05 E06 E07 E08 E09 E10 E11 E12 E13 E15 E19 E21 E23 E25 E26 E27 E29 E30 E31 E33 E34 E36
+  8   5   4   7   7   6   4   9   5   9  11   5   6   6   7   5   7   8   8   9   6   8  11   5   6
+%%%-RMS OF RESIDUALS---PHASE(MM)
+Newly removed observations   0  0.00%
+Newly inserted ambiguities   0  0.00%
+===> Data cleaning finished
+===> Final processing finished
+===> ProcessSingleSite 2026015 HKWS finished
+===> Checking executables finished
+:: Processing date range: 2026 01 15 -- 2026 01 15
+:: Control file: C:/Users/Joel/.PRIDE_PPPAR_config/config_template
+:: AR switch: N
+:: RINEX directory: C:/PPP_PROJECT/PRIDE_work/runs/WUH_run
+:: RINEX observation file: C:/PPP_PROJECT/PRIDE_work/runs/WUH_run/WUH200CHN_R_20260150000_01D_30S_MO.rnx
+===> ProcessSingleSession time: 2026-01-15 00:00:00.0000000 - 23:59:30.0000000 
+===> PrepareTables ...
+===> PrepareTables finished
+===> PrepareProducts ...
+:: Preparing IGS ANTEX product ...
+:: Preparing IGS ANTEX product igs20_2401.atx ...
+:: Prepare IGS ANTEX product: igs20_2401.atx finished
+(2026-05-09 09:54:07) sp3orb COD0MGXFIN_20260150000_01D_05M_ORB.SP3 -cfg config_2026015_WUH2 execution ok
+===> PrepareProducts finished
+===> Prepare initial position WUH2...
+(2026-05-09 09:54:33) spp -trop saas -ts 2026/01/15 00:00:00.0000000 -te 2026/01/15 23:59:30.0000000 -ti 30.00 C:/PPP_PROJECT/PRIDE_work/runs/WUH_run/WUH200CHN_R_20260150000_01D_30S_MO.rnx C:/PPP_PROJECT/PRIDE_work/runs/WUH_run/nav/brdm0150.26p execution ok
+===> Prepare initial position WUH2 finished
+===> ProcessSingleSite 2026 015 WUH2 ...
+===> Data pre-processing
+(2026-05-09 09:54:44) tedit C:/PPP_PROJECT/PRIDE_work/runs/WUH_run/WUH200CHN_R_20260150000_01D_30S_MO.rnx -time 2026 01 15 0 0 0.00 -len 86370.00 -int 30 -xyz -2267750.0915 5009153.1692 3221293.2695 -short 1200 -lc_check only -rhd log_2026015_WUH2 -pc_check 300 -elev 7 -rnxn C:/PPP_PROJECT/PRIDE_work/runs/WUH_run/nav/brdm0150.26p execution ok
+===> Data pre-processing finished
+===> Data cleaning...
+(2026-05-09 09:55:09) lsq config_2026015_WUH2 C:/PPP_PROJECT/PRIDE_work/runs/WUH_run/WUH200CHN_R_20260150000_01D_30S_MO.rnx execution ok
+(2026-05-09 09:55:12) redig res_2026015 -jmp 400 -sht 20 execution ok
+%%%+RMS OF RESIDUALS---PHASE(MM)
+G01 G02 G03 G04 G05 G06 G07 G08 G09 G10 G11 G12 G13 G14 G15 G16 G17 G18 G19 G21 G22 G23 G24 G25 G26 G27 G28 G29 G30 G31 G32
+964 489 191 200  74 161 825 120 265 176 692  79 211 462 124 314 336  83 185 326 375  64 107 165 128 211  52 222 ***  71  90
+E02 E03 E04 E05 E06 E07 E08 E09 E10 E11 E12 E13 E14 E15 E18 E19 E21 E23 E25 E26 E27 E29 E30 E31 E33 E34 E36
+174  81 139 260 325  73  64 177 224 370 *** 182 303  87 ***  95 147 154 459 206 118 376 134 250 314 175 170
+C06 C07 C08 C09 C10 C11 C12 C13 C14 C16 C19 C20 C21 C22 C23 C24 C25 C26 C27 C28 C29 C30 C32 C33 C34 C35 C36 C37 C38 C39 C40 C41 C42 C43 C44 C45 C47 C48
+*** *** *** *** *** *** *** 605 820 *** 355 238 476 142 *** 237 565 263 363 312 477 *** *** 719 *** 185 *** *** 198 986 *** 620 578 255 *** 117 310 106
+%%%-RMS OF RESIDUALS---PHASE(MM)
+Newly removed observations   151  0.17%
+Newly inserted ambiguities   305  211.81%
+(2026-05-09 09:55:47) lsq config_2026015_WUH2 C:/PPP_PROJECT/PRIDE_work/runs/WUH_run/WUH200CHN_R_20260150000_01D_30S_MO.rnx execution ok
+(2026-05-09 09:55:49) redig res_2026015 -jmp 200 -sht 20 execution ok
+%%%+RMS OF RESIDUALS---PHASE(MM)
+G01 G02 G03 G04 G05 G06 G07 G08 G09 G10 G11 G12 G13 G14 G15 G16 G17 G18 G19 G21 G22 G23 G24 G25 G26 G27 G28 G29 G30 G31 G32
+ 16  10  24  18  20  11  18   8  24  11  12  16   8  18   8   9  10  10   7   9   9  10  35  18   8  12   8  14  34   9   7
+E02 E03 E04 E05 E06 E07 E08 E09 E10 E11 E12 E13 E14 E15 E18 E19 E21 E23 E25 E26 E27 E29 E30 E31 E33 E34 E36
+ 16   9   8  30  12  12   7  11  10  10  11  77   8  11   9   7   9   8  11  19  11  25  13  12  11  10   8
+C06 C07 C08 C09 C10 C11 C12 C13 C14 C16 C19 C20 C21 C22 C23 C24 C25 C26 C27 C28 C29 C30 C32 C33 C34 C35 C36 C37 C38 C39 C40 C41 C42 C43 C44 C45 C47 C48
+ 26  44  17  21  36  41  36  57  30  33  11   9  21  11  12  19  13  52  14  19  14  33  71  66  43  26  31  78  12  11   9  22  37  19  34  10  11  11
+%%%-RMS OF RESIDUALS---PHASE(MM)
+Newly removed observations   1529  1.74%
+Newly inserted ambiguities   32  12.17%
+(2026-05-09 09:56:34) lsq config_2026015_WUH2 C:/PPP_PROJECT/PRIDE_work/runs/WUH_run/WUH200CHN_R_20260150000_01D_30S_MO.rnx execution ok
+(2026-05-09 09:56:35) redig res_2026015 -jmp 100 -sht 20 execution ok
+%%%+RMS OF RESIDUALS---PHASE(MM)
+G01 G02 G03 G04 G05 G06 G07 G08 G09 G10 G11 G12 G13 G14 G15 G16 G17 G18 G19 G21 G22 G23 G24 G25 G26 G27 G28 G29 G30 G31 G32
+ 16   9  24  19  20  11   9   7  14  10  13   9   8  10   8   8   9   8   6   8   9   9  14  17   7  11   8  10  30   8   7
+E02 E03 E04 E05 E06 E07 E08 E09 E10 E11 E12 E13 E14 E15 E18 E19 E21 E23 E25 E26 E27 E29 E30 E31 E33 E34 E36
+ 16   8   8  10  12  11   8  12   8  10  10  13   8  10   9   7  10   7  11  15  11  24  13  11  13   9   8
+C06 C07 C08 C09 C10 C11 C12 C13 C14 C16 C19 C20 C21 C22 C23 C24 C25 C26 C27 C28 C29 C30 C32 C33 C34 C35 C36 C37 C38 C39 C40 C41 C42 C43 C44 C45 C47 C48
+ 10  10  10   9   9   8  16   9  13   8  11   9  16  11  10  11  10  14  12  10  13   9  14  12   9  22  14  14   9   9   9  14  13  13  16   9  10  11
+%%%-RMS OF RESIDUALS---PHASE(MM)
+Newly removed observations   141  0.16%
+Newly inserted ambiguities   16  5.97%
+(2026-05-09 09:57:11) lsq config_2026015_WUH2 C:/PPP_PROJECT/PRIDE_work/runs/WUH_run/WUH200CHN_R_20260150000_01D_30S_MO.rnx execution ok
+(2026-05-09 09:57:12) redig res_2026015 -jmp 50 -sht 20 execution ok
+%%%+RMS OF RESIDUALS---PHASE(MM)
+G01 G02 G03 G04 G05 G06 G07 G08 G09 G10 G11 G12 G13 G14 G15 G16 G17 G18 G19 G21 G22 G23 G24 G25 G26 G27 G28 G29 G30 G31 G32
+ 15   9  12   9  16   8   9   9  13   9  12   9   8  10   8   8  10   7   6   8   8   9  11  15   7  10   8  10  16   8   7
+E02 E03 E04 E05 E06 E07 E08 E09 E10 E11 E12 E13 E14 E15 E18 E19 E21 E23 E25 E26 E27 E29 E30 E31 E33 E34 E36
+ 15   8   8  10  11  12   7  11   8   9  10  13   8  10   8   7  10   7  11  15  10  24  12  10  12   9   8
+C06 C07 C08 C09 C10 C11 C12 C13 C14 C16 C19 C20 C21 C22 C23 C24 C25 C26 C27 C28 C29 C30 C32 C33 C34 C35 C36 C37 C38 C39 C40 C41 C42 C43 C44 C45 C47 C48
+ 10   9  10   9   9   8  14   8  13   7  11   9  13  10  10  11  10  12  12  10  13  10  13  11   9  23  14  13   8   9   9  14  12  13  16   9  10  11
+%%%-RMS OF RESIDUALS---PHASE(MM)
+Newly removed observations   69  0.08%
+Newly inserted ambiguities   89  32.60%
+(2026-05-09 09:57:39) lsq config_2026015_WUH2 C:/PPP_PROJECT/PRIDE_work/runs/WUH_run/WUH200CHN_R_20260150000_01D_30S_MO.rnx execution ok
+(2026-05-09 09:57:40) redig res_2026015 -jmp 50 -sht 20 execution ok
+%%%+RMS OF RESIDUALS---PHASE(MM)
+G01 G02 G03 G04 G05 G06 G07 G08 G09 G10 G11 G12 G13 G14 G15 G16 G17 G18 G19 G21 G22 G23 G24 G25 G26 G27 G28 G29 G30 G31 G32
+  8   9  12   9   9   8   9   9  12   9  12   9   8  10   8   8   8   7   6   8   7   8   9  11   7  10   8  10  15   8   7
+E02 E03 E04 E05 E06 E07 E08 E09 E10 E11 E12 E13 E14 E15 E18 E19 E21 E23 E25 E26 E27 E29 E30 E31 E33 E34 E36
+ 15   7   8  10  10  11   7  11   8   9   9  13   8  10   8   7  10   7  11  15  10  23  11  11  12   8   8
+C06 C07 C08 C09 C10 C11 C12 C13 C14 C16 C19 C20 C21 C22 C23 C24 C25 C26 C27 C28 C29 C30 C32 C33 C34 C35 C36 C37 C38 C39 C40 C41 C42 C43 C44 C45 C47 C48
+ 10   9   9   8   8   8  13   8  13   7   9   9  13   9  10   9  10  12  12   9  12   9  13  11   9  16  13  12   7   9   9  12  13  11  15   9  10  11
+%%%-RMS OF RESIDUALS---PHASE(MM)
+Newly removed observations   636  0.74%
+Newly inserted ambiguities   0  0.00%
+(2026-05-09 09:58:08) lsq config_2026015_WUH2 C:/PPP_PROJECT/PRIDE_work/runs/WUH_run/WUH200CHN_R_20260150000_01D_30S_MO.rnx execution ok
+(2026-05-09 09:58:09) redig res_2026015 -jmp 50 -sht 20 execution ok
+%%%+RMS OF RESIDUALS---PHASE(MM)
+G01 G02 G03 G04 G05 G06 G07 G08 G09 G10 G11 G12 G13 G14 G15 G16 G17 G18 G19 G21 G22 G23 G24 G25 G26 G27 G28 G29 G30 G31 G32
+  7   9  12   9   9   8   9   9  12   9  12   9   8   9   8   8   8   7   6   8   7   8   9  11   7  10   8  10  15   7   7
+E02 E03 E04 E05 E06 E07 E08 E09 E10 E11 E12 E13 E14 E15 E18 E19 E21 E23 E25 E26 E27 E29 E30 E31 E33 E34 E36
+ 15   7   8  10  10  11   7  11   8   9   9  12   8  10   8   7  10   7  11  15  10  24  11  11  12   8   8
+C06 C07 C08 C09 C10 C11 C12 C13 C14 C16 C19 C20 C21 C22 C23 C24 C25 C26 C27 C28 C29 C30 C32 C33 C34 C35 C36 C37 C38 C39 C40 C41 C42 C43 C44 C45 C47 C48
+  9   9   9   8   8   8  13   8  13   7   9   9  13   9  10   9  10  12  12   9  12   9  13  11   9  15  13  12   7   9   9  11  13  11  14   9  10  11
+%%%-RMS OF RESIDUALS---PHASE(MM)
+Newly removed observations   0  0.00%
+Newly inserted ambiguities   0  0.00%
+===> Data cleaning finished
+===> Final processing finished
+===> ProcessSingleSite 2026015 WUH2 finished
+===> Checking executables finished
+:: Processing date range: 2026 01 15 -- 2026 01 15
+:: Control file: C:/Users/Joel/.PRIDE_PPPAR_config/config_template
+:: AR switch: N
+:: RINEX directory: C:/PPP_PROJECT/PRIDE_work/runs/KIRU_run
+:: RINEX observation file: C:/PPP_PROJECT/PRIDE_work/runs/KIRU_run/KIRU00SWE_R_20260150000_01D_30S_MO.rnx
+===> ProcessSingleSession time: 2026-01-15 00:00:0.0000000 - 23:59:30.0000000 
+===> PrepareTables ...
+===> PrepareTables finished
+===> PrepareProducts ...
+:: Preparing IGS ANTEX product ...
+:: Preparing IGS ANTEX product igs20_2401.atx ...
+:: Prepare IGS ANTEX product: igs20_2401.atx finished
+(2026-05-09 10:00:40) sp3orb COD0MGXFIN_20260150000_01D_05M_ORB.SP3 -cfg config_2026015_KIRU execution ok
+===> PrepareProducts finished
+===> Prepare initial position KIRU...
+(2026-05-09 10:01:06) spp -trop saas -ts 2026/01/15 00:00:0.0000000 -te 2026/01/15 23:59:30.0000000 -ti 30.00 C:/PPP_PROJECT/PRIDE_work/runs/KIRU_run/KIRU00SWE_R_20260150000_01D_30S_MO.rnx C:/PPP_PROJECT/PRIDE_work/runs/KIRU_run/nav/brdm0150.26p execution ok
+===> Prepare initial position KIRU finished
+===> ProcessSingleSite 2026 015 KIRU ...
+===> Data pre-processing
+(2026-05-09 10:01:15) tedit C:/PPP_PROJECT/PRIDE_work/runs/KIRU_run/KIRU00SWE_R_20260150000_01D_30S_MO.rnx -time 2026 01 15 0 0 0.00 -len 86370.00 -int 30 -xyz 2251420.4699 862817.5198 5885475.3365 -short 1200 -lc_check only -rhd log_2026015_KIRU -pc_check 300 -elev 7 -rnxn C:/PPP_PROJECT/PRIDE_work/runs/KIRU_run/nav/brdm0150.26p execution ok
+===> Data pre-processing finished
+===> Data cleaning...
+(2026-05-09 10:01:40) lsq config_2026015_KIRU C:/PPP_PROJECT/PRIDE_work/runs/KIRU_run/KIRU00SWE_R_20260150000_01D_30S_MO.rnx execution ok
+(2026-05-09 10:01:41) redig res_2026015 -jmp 400 -sht 20 execution ok
+%%%+RMS OF RESIDUALS---PHASE(MM)
+G01 G02 G03 G04 G05 G06 G07 G08 G09 G10 G11 G12 G13 G14 G15 G16 G17 G18 G19 G21 G22 G23 G24 G25 G26 G27 G28 G29 G30 G31 G32
+ 71 100  80  78  66  71  86  46  70 192  52 212  42  75  51  33  72  45 207  59  66  26  67  87  58  39 255  56 199  73  66
+E02 E03 E04 E05 E06 E07 E08 E09 E10 E11 E12 E13 E14 E15 E18 E19 E21 E23 E25 E26 E27 E29 E30 E31 E33 E34 E36
+ 36  36  68  42  43  58  50  48  77  68 158  41  29  40 138  42  21  45 109 149  50  32  19  28  47  30  53
+C06 C07 C08 C09 C10 C11 C12 C13 C14 C16 C19 C20 C21 C22 C23 C24 C25 C26 C27 C28 C29 C30 C32 C33 C34 C35 C36 C37 C38 C39 C40 C41 C42 C43 C44 C45 C47 C48
+ 84 146  53 *** 339 528 564 ***  66  64 111  52  72  47 ***  39  70 147 366  86 ***  56 546  44  44  48  68  81  70  49 420 *** 656  72 107  37  50 176
+%%%-RMS OF RESIDUALS---PHASE(MM)
+Newly removed observations   81  0.09%
+Newly inserted ambiguities   34  16.75%
+(2026-05-09 10:02:29) lsq config_2026015_KIRU C:/PPP_PROJECT/PRIDE_work/runs/KIRU_run/KIRU00SWE_R_20260150000_01D_30S_MO.rnx execution ok
+(2026-05-09 10:02:30) redig res_2026015 -jmp 200 -sht 20 execution ok
+%%%+RMS OF RESIDUALS---PHASE(MM)
+G01 G02 G03 G04 G05 G06 G07 G08 G09 G10 G11 G12 G13 G14 G15 G16 G17 G18 G19 G21 G22 G23 G24 G25 G26 G27 G28 G29 G30 G31 G32
+ 23  51  47  44  49  70  82  26  42 183  33  77  12  32  17  13  23  14  32  15  27  20  33  28  21  17  30  16  15  68  27
+E02 E03 E04 E05 E06 E07 E08 E09 E10 E11 E12 E13 E14 E15 E18 E19 E21 E23 E25 E26 E27 E29 E30 E31 E33 E34 E36
+ 11  10  17  13  13  13   9  12  15  15  15  12  15  14  12  14  12  12  13  12  13  13   8  21  13   9  13
+C06 C07 C08 C09 C10 C11 C12 C13 C14 C16 C19 C20 C21 C22 C23 C24 C25 C26 C27 C28 C29 C30 C32 C33 C34 C35 C36 C37 C38 C39 C40 C41 C42 C43 C44 C45 C47 C48
+ 16  14  34  14  12  16  24  28  17  13  14  16  17  19  17  14  19  18  16  14  13  13  12  23  19  16  16  14  16  13  12  20  14  17  19  13  13  16
+%%%-RMS OF RESIDUALS---PHASE(MM)
+Newly removed observations   166  0.17%
+Newly inserted ambiguities   9  4.23%
+(2026-05-09 10:03:03) lsq config_2026015_KIRU C:/PPP_PROJECT/PRIDE_work/runs/KIRU_run/KIRU00SWE_R_20260150000_01D_30S_MO.rnx execution ok
+(2026-05-09 10:03:05) redig res_2026015 -jmp 100 -sht 20 execution ok
+%%%+RMS OF RESIDUALS---PHASE(MM)
+G01 G02 G03 G04 G05 G06 G07 G08 G09 G10 G11 G12 G13 G14 G15 G16 G17 G18 G19 G21 G22 G23 G24 G25 G26 G27 G28 G29 G30 G31 G32
+ 12  11  14  12  11  13  14  10  13  12  13  22  11  15  14  11  14  12  14  14  15  14  13  11  12  16  15  14  14  17  13
+E02 E03 E04 E05 E06 E07 E08 E09 E10 E11 E12 E13 E14 E15 E18 E19 E21 E23 E25 E26 E27 E29 E30 E31 E33 E34 E36
+ 10   9  16  11  12   9   8  12  14  15  14  11  15  12  12  13  11  11  11   9  13  11   9  13  12  10  11
+C06 C07 C08 C09 C10 C11 C12 C13 C14 C16 C19 C20 C21 C22 C23 C24 C25 C26 C27 C28 C29 C30 C32 C33 C34 C35 C36 C37 C38 C39 C40 C41 C42 C43 C44 C45 C47 C48
+ 16  13  34  12  12  14  23  28  16  13  14  15  15  15  15  13  15  17  15  14  13  13  10  20  16  16  13  14  14  13  12  18  13  16  17  12  13  15
+%%%-RMS OF RESIDUALS---PHASE(MM)
+Newly removed observations   48  0.05%
+Newly inserted ambiguities   11  5.05%
+(2026-05-09 10:03:50) lsq config_2026015_KIRU C:/PPP_PROJECT/PRIDE_work/runs/KIRU_run/KIRU00SWE_R_20260150000_01D_30S_MO.rnx execution ok
+(2026-05-09 10:03:54) redig res_2026015 -jmp 50 -sht 20 execution ok
+%%%+RMS OF RESIDUALS---PHASE(MM)
+G01 G02 G03 G04 G05 G06 G07 G08 G09 G10 G11 G12 G13 G14 G15 G16 G17 G18 G19 G21 G22 G23 G24 G25 G26 G27 G28 G29 G30 G31 G32
+ 12  11  14  12  10  13  14  10  13  12  13  13  11  15  14  11  14  12  14  13  15  14  13  11  12  15  13  13  14  17  13
+E02 E03 E04 E05 E06 E07 E08 E09 E10 E11 E12 E13 E14 E15 E18 E19 E21 E23 E25 E26 E27 E29 E30 E31 E33 E34 E36
+ 10   9  16  11  12   9   8  12  14  15  14  11  14  12  12  13  11  12  11   9  12  11   9  13  12  10  12
+C06 C07 C08 C09 C10 C11 C12 C13 C14 C16 C19 C20 C21 C22 C23 C24 C25 C26 C27 C28 C29 C30 C32 C33 C34 C35 C36 C37 C38 C39 C40 C41 C42 C43 C44 C45 C47 C48
+ 16  13  34  12  12  14  23  28  16  13  14  15  15  15  15  13  15  17  15  14  13  13  10  19  16  16  13  14  14  13  12  18  13  16  17  12  13  15
+%%%-RMS OF RESIDUALS---PHASE(MM)
+Newly removed observations   115  0.12%
+Newly inserted ambiguities   160  75.12%
+(2026-05-09 10:04:44) lsq config_2026015_KIRU C:/PPP_PROJECT/PRIDE_work/runs/KIRU_run/KIRU00SWE_R_20260150000_01D_30S_MO.rnx execution ok
+(2026-05-09 10:04:50) redig res_2026015 -jmp 50 -sht 20 execution ok
+%%%+RMS OF RESIDUALS---PHASE(MM)
+G01 G02 G03 G04 G05 G06 G07 G08 G09 G10 G11 G12 G13 G14 G15 G16 G17 G18 G19 G21 G22 G23 G24 G25 G26 G27 G28 G29 G30 G31 G32
+ 12  11  14  12  10  12  13  10  12  12  12  12  10  13  11  11  13  11  13  13  11  14  13  11  12  15  13  14  12  17  12
+E02 E03 E04 E05 E06 E07 E08 E09 E10 E11 E12 E13 E14 E15 E18 E19 E21 E23 E25 E26 E27 E29 E30 E31 E33 E34 E36
+ 10   9  15  11  12   9   8  12  14  15  14  10  13  12  11  12  11  11  11   9  10  11   9  13  11  10  12
+C06 C07 C08 C09 C10 C11 C12 C13 C14 C16 C19 C20 C21 C22 C23 C24 C25 C26 C27 C28 C29 C30 C32 C33 C34 C35 C36 C37 C38 C39 C40 C41 C42 C43 C44 C45 C47 C48
+ 16  13  34  11  11  13  22  28  14  13  14  14  14  15  14  13  14  14  15  14  12  13  10  16  13  15  13  13  13  12  12  17  13  16  15  12  12  14
+%%%-RMS OF RESIDUALS---PHASE(MM)
+Newly removed observations   860  0.91%
+Newly inserted ambiguities   0  0.00%
+(2026-05-09 10:05:35) lsq config_2026015_KIRU C:/PPP_PROJECT/PRIDE_work/runs/KIRU_run/KIRU00SWE_R_20260150000_01D_30S_MO.rnx execution ok
+(2026-05-09 10:05:36) redig res_2026015 -jmp 50 -sht 20 execution ok
+%%%+RMS OF RESIDUALS---PHASE(MM)
+G01 G02 G03 G04 G05 G06 G07 G08 G09 G10 G11 G12 G13 G14 G15 G16 G17 G18 G19 G21 G22 G23 G24 G25 G26 G27 G28 G29 G30 G31 G32
+ 12  11  14  12  10  12  13  10  12  11  12  11   9  13  11  10  13  11  13  13  10  14  13  11  12  15  12  14  12  17  12
+E02 E03 E04 E05 E06 E07 E08 E09 E10 E11 E12 E13 E14 E15 E18 E19 E21 E23 E25 E26 E27 E29 E30 E31 E33 E34 E36
+ 10   9  15  11  12   9   8  12  14  15  14  10  12  11  11  12  11  11  11   9   9  11   9  13  11  10  12
+C06 C07 C08 C09 C10 C11 C12 C13 C14 C16 C19 C20 C21 C22 C23 C24 C25 C26 C27 C28 C29 C30 C32 C33 C34 C35 C36 C37 C38 C39 C40 C41 C42 C43 C44 C45 C47 C48
+ 16  13  34  10  11  13  22  28  14  13  14  14  14  15  14  13  14  14  15  14  12  13  10  16  12  15  13  13  13  12  12  16  13  16  14  12  11  13
+%%%-RMS OF RESIDUALS---PHASE(MM)
+Newly removed observations   0  0.00%
+Newly inserted ambiguities   0  0.00%
+===> Data cleaning finished
+===> Final processing finished
+===> ProcessSingleSite 2026015 KIRU finished
+===> Checking executables finished
+:: Processing date range: 2026 01 15 -- 2026 01 15
+:: Control file: C:/Users/Joel/.PRIDE_PPPAR_config/config_template
+:: AR switch: N
+:: RINEX directory: C:/PPP_PROJECT/PRIDE_work/runs/ZIM2_run
+:: RINEX observation file: C:/PPP_PROJECT/PRIDE_work/runs/ZIM2_run/ZIM200CHE_R_20260150000_01D_30S_MO.rnx
+===> ProcessSingleSession time: 2026-01-15 00:00:0.0000000 - 23:59:30.0000000 
+===> PrepareTables ...
+===> PrepareTables finished
+===> PrepareProducts ...
+:: Preparing IGS ANTEX product ...
+:: Preparing IGS ANTEX product igs20_2401.atx ...
+:: Prepare IGS ANTEX product: igs20_2401.atx finished
+(2026-05-09 10:06:43) sp3orb COD0MGXFIN_20260150000_01D_05M_ORB.SP3 -cfg config_2026015_ZIM2 execution ok
+===> PrepareProducts finished
+===> Prepare initial position ZIM2...
+(2026-05-09 10:07:04) spp -trop saas -ts 2026/01/15 00:00:0.0000000 -te 2026/01/15 23:59:30.0000000 -ti 30.00 C:/PPP_PROJECT/PRIDE_work/runs/ZIM2_run/ZIM200CHE_R_20260150000_01D_30S_MO.rnx C:/PPP_PROJECT/PRIDE_work/runs/ZIM2_run/nav/brdm0150.26p execution ok
+===> Prepare initial position ZIM2 finished
+===> ProcessSingleSite 2026 015 ZIM2 ...
+===> Data pre-processing
+(2026-05-09 10:07:17) tedit C:/PPP_PROJECT/PRIDE_work/runs/ZIM2_run/ZIM200CHE_R_20260150000_01D_30S_MO.rnx -time 2026 01 15 0 0 0.00 -len 86370.00 -int 30 -xyz 4331300.6366 567537.8221 4633134.3636 -short 1200 -lc_check only -rhd log_2026015_ZIM2 -pc_check 300 -elev 7 -rnxn C:/PPP_PROJECT/PRIDE_work/runs/ZIM2_run/nav/brdm0150.26p execution ok
+===> Data pre-processing finished
+===> Data cleaning...
+(2026-05-09 10:07:56) lsq config_2026015_ZIM2 C:/PPP_PROJECT/PRIDE_work/runs/ZIM2_run/ZIM200CHE_R_20260150000_01D_30S_MO.rnx execution ok
+(2026-05-09 10:07:58) redig res_2026015 -jmp 400 -sht 20 execution ok
+%%%+RMS OF RESIDUALS---PHASE(MM)
+G01 G02 G03 G04 G05 G06 G07 G08 G09 G10 G11 G12 G13 G14 G15 G16 G17 G18 G19 G21 G22 G23 G24 G25 G26 G27 G28 G29 G30 G31 G32
+ 77  76  46  92  91  61 107  31  62  65  40  53  80 107  58 145  69 103  80 131  83 126  31 130  48  50  57  65  56 182  61
+E02 E03 E04 E05 E06 E07 E08 E09 E10 E11 E12 E13 E14 E15 E18 E19 E21 E23 E25 E26 E27 E29 E30 E31 E33 E34 E36
+ 62  45 320  55  42  75  35 117 102 261   9  77   9 114   6  85  70  42  38  52  49  70  80 114  17  39  94
+C06 C07 C08 C09 C10 C11 C12 C13 C14 C16 C19 C20 C21 C22 C23 C24 C25 C26 C27 C28 C29 C30 C32 C33 C34 C35 C36 C37 C38 C39 C40 C41 C42 C43 C44 C45 C47 C48
+164 365 541 *** 614  69 *** 293 *** 261  68 129  72  78 118 345 226  63 490 113 159 *** 131 177  60 943 952 *** 994 *** 157 118  46  32 *** 102 184 628
+%%%-RMS OF RESIDUALS---PHASE(MM)
+Newly removed observations   90  0.11%
+Newly inserted ambiguities   62  37.13%
+(2026-05-09 10:08:28) lsq config_2026015_ZIM2 C:/PPP_PROJECT/PRIDE_work/runs/ZIM2_run/ZIM200CHE_R_20260150000_01D_30S_MO.rnx execution ok
+(2026-05-09 10:08:29) redig res_2026015 -jmp 200 -sht 20 execution ok
+%%%+RMS OF RESIDUALS---PHASE(MM)
+G01 G02 G03 G04 G05 G06 G07 G08 G09 G10 G11 G12 G13 G14 G15 G16 G17 G18 G19 G21 G22 G23 G24 G25 G26 G27 G28 G29 G30 G31 G32
+  8   7   6   8  10  10   8   7   8   9   8   8   9  10  11  10  10  31  12  23   9   9   8   9   6   7  10   8   7  16  10
+E02 E03 E04 E05 E06 E07 E08 E09 E10 E11 E12 E13 E14 E15 E18 E19 E21 E23 E25 E26 E27 E29 E30 E31 E33 E34 E36
+  7   8   9   5   6   7   7   5   9  60   7   8   6   8   2   7   6   9   7   7   6   7  38   9   6   6   8
+C06 C07 C08 C09 C10 C11 C12 C13 C14 C16 C19 C20 C21 C22 C23 C24 C25 C26 C27 C28 C29 C30 C32 C33 C34 C35 C36 C37 C38 C39 C40 C41 C42 C43 C44 C45 C47 C48
+ 16  12  36   9   8  10  19  19  14  11  12  12  11  11  11  13  13  10  14  14  11  12   8  13  10  12  10  11  12  14  13  13   9   9  13  11  12  13
+%%%-RMS OF RESIDUALS---PHASE(MM)
+Newly removed observations   270  0.34%
+Newly inserted ambiguities   4  2.09%
+(2026-05-09 10:09:31) lsq config_2026015_ZIM2 C:/PPP_PROJECT/PRIDE_work/runs/ZIM2_run/ZIM200CHE_R_20260150000_01D_30S_MO.rnx execution ok
+(2026-05-09 10:09:37) redig res_2026015 -jmp 100 -sht 20 execution ok
+%%%+RMS OF RESIDUALS---PHASE(MM)
+G01 G02 G03 G04 G05 G06 G07 G08 G09 G10 G11 G12 G13 G14 G15 G16 G17 G18 G19 G21 G22 G23 G24 G25 G26 G27 G28 G29 G30 G31 G32
+  8   7   6   8  10  10   8   7   8   9   8   8   9  10  11  10  10  14  10   9   9   9   8   8   6   7  10   8   7  10  10
+E02 E03 E04 E05 E06 E07 E08 E09 E10 E11 E12 E13 E14 E15 E18 E19 E21 E23 E25 E26 E27 E29 E30 E31 E33 E34 E36
+  7   8   8   5   6   7   6   5   9  11   7   8   6   8   2   7   6   9   7   8   6   7   6   9   6   6   8
+C06 C07 C08 C09 C10 C11 C12 C13 C14 C16 C19 C20 C21 C22 C23 C24 C25 C26 C27 C28 C29 C30 C32 C33 C34 C35 C36 C37 C38 C39 C40 C41 C42 C43 C44 C45 C47 C48
+ 16  12  35   8   6  10  19  18  12  11  12  12  11  11  11  13  13  10  13  14  11  12   8  13  10  12  10  11  12  14  13  13   9   9   9  11  12  13
+%%%-RMS OF RESIDUALS---PHASE(MM)
+Newly removed observations   69  0.09%
+Newly inserted ambiguities   17  8.99%
+(2026-05-09 10:10:21) lsq config_2026015_ZIM2 C:/PPP_PROJECT/PRIDE_work/runs/ZIM2_run/ZIM200CHE_R_20260150000_01D_30S_MO.rnx execution ok
+(2026-05-09 10:10:23) redig res_2026015 -jmp 50 -sht 20 execution ok
+%%%+RMS OF RESIDUALS---PHASE(MM)
+G01 G02 G03 G04 G05 G06 G07 G08 G09 G10 G11 G12 G13 G14 G15 G16 G17 G18 G19 G21 G22 G23 G24 G25 G26 G27 G28 G29 G30 G31 G32
+  8   7   6   8  10  10   8   7   8   9   8   8   9  10  11  10  10  10  10   9   9   9   8   8   6   7  10   8   7  10   9
+E02 E03 E04 E05 E06 E07 E08 E09 E10 E11 E12 E13 E14 E15 E18 E19 E21 E23 E25 E26 E27 E29 E30 E31 E33 E34 E36
+  7   8   8   5   6   7   6   5   9  10   7   8   6   8   2   7   6   8   7   8   6   7   6   9   6   6   8
+C06 C07 C08 C09 C10 C11 C12 C13 C14 C16 C19 C20 C21 C22 C23 C24 C25 C26 C27 C28 C29 C30 C32 C33 C34 C35 C36 C37 C38 C39 C40 C41 C42 C43 C44 C45 C47 C48
+ 16  12  35   8   6  10  19  18  12  11  12  12  11  10  11  13  13   9  13  14  11  10   8  11   9  12   8  11  12  14  13  12   9   9   8  11  12  13
+%%%-RMS OF RESIDUALS---PHASE(MM)
+Newly removed observations   185  0.23%
+Newly inserted ambiguities   177  96.72%
+(2026-05-09 10:11:17) lsq config_2026015_ZIM2 C:/PPP_PROJECT/PRIDE_work/runs/ZIM2_run/ZIM200CHE_R_20260150000_01D_30S_MO.rnx execution ok
+(2026-05-09 10:11:21) redig res_2026015 -jmp 50 -sht 20 execution ok
+%%%+RMS OF RESIDUALS---PHASE(MM)
+G01 G02 G03 G04 G05 G06 G07 G08 G09 G10 G11 G12 G13 G14 G15 G16 G17 G18 G19 G21 G22 G23 G24 G25 G26 G27 G28 G29 G30 G31 G32
+  7   7   5   8   9   9   8   7   7   8   8   7   8   9  11  10   8   9   9   8   9   9   8   8   6   6   9   8   7   9   8
+E02 E03 E04 E05 E06 E07 E08 E09 E10 E11 E12 E13 E14 E15 E18 E19 E21 E23 E25 E26 E27 E29 E30 E31 E33 E34 E36
+  7   8   7   5   6   7   6   4   8  10   7   8   6   8   2   7   6   7   7   7   6   7   6   9   5   6   8
+C06 C07 C08 C09 C10 C11 C12 C13 C14 C16 C19 C20 C21 C22 C23 C24 C25 C26 C27 C28 C29 C30 C32 C33 C34 C35 C36 C37 C38 C39 C40 C41 C42 C43 C44 C45 C47 C48
+ 13  12  35   8   6   9  18  18  12  11  12  11  11  10  11  11  12   8  11  14  11   8   8  10   8  11   7  10  12  14  13   9   9   8   8  10  10  12
+%%%-RMS OF RESIDUALS---PHASE(MM)
+Newly removed observations   927  1.17%
+Newly inserted ambiguities   4  1.95%
+(2026-05-09 10:12:08) lsq config_2026015_ZIM2 C:/PPP_PROJECT/PRIDE_work/runs/ZIM2_run/ZIM200CHE_R_20260150000_01D_30S_MO.rnx execution ok
+(2026-05-09 10:12:10) redig res_2026015 -jmp 50 -sht 20 execution ok
+%%%+RMS OF RESIDUALS---PHASE(MM)
+G01 G02 G03 G04 G05 G06 G07 G08 G09 G10 G11 G12 G13 G14 G15 G16 G17 G18 G19 G21 G22 G23 G24 G25 G26 G27 G28 G29 G30 G31 G32
+  7   7   5   8   9   9   8   7   6   8   8   6   8   9  11   9   8   9   9   8   9   9   7   8   6   6   9   7   7   9   8
+E02 E03 E04 E05 E06 E07 E08 E09 E10 E11 E12 E13 E14 E15 E18 E19 E21 E23 E25 E26 E27 E29 E30 E31 E33 E34 E36
+  7   7   6   5   6   7   6   4   8  10   7   8   6   8   2   7   6   7   7   7   6   6   5   9   5   6   7
+C06 C07 C08 C09 C10 C11 C12 C13 C14 C16 C19 C20 C21 C22 C23 C24 C25 C26 C27 C28 C29 C30 C32 C33 C34 C35 C36 C37 C38 C39 C40 C41 C42 C43 C44 C45 C47 C48
+ 12  12  35   8   6   9  18  18  12  11  12  11  10  10  11  11  12   8  11  14  11   8   7  10   8  11   7  10  12  14  13   9   9   8   7   9  10  12
+%%%-RMS OF RESIDUALS---PHASE(MM)
+Newly removed observations   58  0.07%
+Newly inserted ambiguities   0  0.00%
+(2026-05-09 10:12:49) lsq config_2026015_ZIM2 C:/PPP_PROJECT/PRIDE_work/runs/ZIM2_run/ZIM200CHE_R_20260150000_01D_30S_MO.rnx execution ok
+(2026-05-09 10:12:51) redig res_2026015 -jmp 50 -sht 20 execution ok
+%%%+RMS OF RESIDUALS---PHASE(MM)
+G01 G02 G03 G04 G05 G06 G07 G08 G09 G10 G11 G12 G13 G14 G15 G16 G17 G18 G19 G21 G22 G23 G24 G25 G26 G27 G28 G29 G30 G31 G32
+  7   7   5   8   9   9   8   7   6   8   8   6   8   9  11   9   8   9   9   8   9   9   7   8   6   6   9   7   7   9   8
+E02 E03 E04 E05 E06 E07 E08 E09 E10 E11 E12 E13 E14 E15 E18 E19 E21 E23 E25 E26 E27 E29 E30 E31 E33 E34 E36
+  7   7   6   5   6   7   6   4   8  10   7   8   6   8   2   7   6   7   7   7   6   6   5   9   5   6   7
+C06 C07 C08 C09 C10 C11 C12 C13 C14 C16 C19 C20 C21 C22 C23 C24 C25 C26 C27 C28 C29 C30 C32 C33 C34 C35 C36 C37 C38 C39 C40 C41 C42 C43 C44 C45 C47 C48
+ 12  12  35   8   6   9  18  18  12  11  12  11  10  10  11  11  12   8  11  14  11   8   7  10   8  11   7  10  12  14  13   8   9   8   7   9  10  12
+%%%-RMS OF RESIDUALS---PHASE(MM)
+Newly removed observations   0  0.00%
+Newly inserted ambiguities   0  0.00%
+===> Data cleaning finished
+===> Final processing finished
+===> ProcessSingleSite 2026015 ZIM2 finished

@@ -1,7 +1,5 @@
 # Complete End-to-End Guide: PPP with RTKLIB, GAMP, and PRIDE PPP-AR
 
-### For Your Research Project on Precise Point Positioning (PPP)
-
 ---
 
 ## PART 0 — What is PPP? (Read This First)
