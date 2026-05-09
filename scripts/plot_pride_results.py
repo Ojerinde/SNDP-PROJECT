@@ -13,7 +13,7 @@ Generates:
 Usage:
     python scripts/plot_pride_results.py
 
-Output files saved to: results/PRIDE_plots/
+Output files saved to: PRIDE_work/PRIDE_plots/
 """
 
 from datetime import datetime, timedelta
@@ -36,7 +36,7 @@ PRIDE_RUNS = {
     "ZIM2": r"C:\PPP_PROJECT\PRIDE_work\runs\ZIM2_run\2026\015",
 }
 
-OUTPUT_DIR = r"C:\PPP_PROJECT\results\PRIDE_plots"
+OUTPUT_DIR = r"C:\PPP_PROJECT\PRIDE_work\PRIDE_plots"
 SESSION_DATE = datetime(2026, 1, 15, 0, 0, 0)
 
 STATION_COLORS = {

@@ -621,7 +621,7 @@ _ZIM2 Session Length — 8h vs full day. Expected: nearly identical to 10h (sU 0
 
 > **Software:** PRIDE-PPP-AR v3.x | **Mode:** Static batch least-squares | **Data:** 2026 DOY 015 | **Constellations:** GPS + Galileo (no BDS AR)
 
-> **Figures:** `results/PRIDE_plots/` — phase residuals, receiver clock, ZTD, AR fix rates for all 4 stations.
+> **Figures:** `PRIDE_work/PRIDE_plots/` — phase residuals, receiver clock, ZTD, AR fix rates for all 4 stations.
 
 ---
 
@@ -679,44 +679,44 @@ All four runs (one per station) were re-executed with AR=N on 2026-05-09. AR=Y r
 
 ---
 
-### Figures (all in `results/PRIDE_plots/`)
+### Figures (all in `PRIDE_work/PRIDE_plots/`)
 
 #### Phase Residuals — AR=Y runs (GPS + Galileo)
 
-![PRIDE Residuals HKWS](../results/PRIDE_plots/PRIDE_residuals_HKWS.png)
+![PRIDE Residuals HKWS](../PRIDE_work/PRIDE_plots/PRIDE_residuals_HKWS.png)
 
 _HKWS phase residuals (GPS+GAL). RMS 6–25 mm across satellites. G30 elevated (~69→12 mm after cleaning). Clean distribution confirms good data quality._
 
-![PRIDE Residuals WUH2](../results/PRIDE_plots/PRIDE_residuals_WUH2.png)
+![PRIDE Residuals WUH2](../PRIDE_work/PRIDE_plots/PRIDE_residuals_WUH2.png)
 
 _WUH2 phase residuals. GPS 7–16 mm, Galileo 7–16 mm, BDS (not AR'd) 9–16 mm. Sig0=3.0 is highest of all stations — reflects multi-GNSS observation weighting with BDS included._
 
-![PRIDE Residuals KIRU](../results/PRIDE_plots/PRIDE_residuals_KIRU.png)
+![PRIDE Residuals KIRU](../PRIDE_work/PRIDE_plots/PRIDE_residuals_KIRU.png)
 
 _KIRU phase residuals. Tight distribution despite high latitude — BDS residuals slightly elevated but within expected bounds. C08 shows 34 mm anomaly (known satellite issue)._
 
-![PRIDE Residuals ZIM2](../results/PRIDE_plots/PRIDE_residuals_ZIM2.png)
+![PRIDE Residuals ZIM2](../PRIDE_work/PRIDE_plots/PRIDE_residuals_ZIM2.png)
 
 _ZIM2 phase residuals. Among the cleanest of all stations — GPS 5–11 mm, Galileo 4–9 mm. Confirms ZIM2's excellent observing environment._
 
 #### Receiver Clock Estimates
 
-![PRIDE Clock HKWS](../results/PRIDE_plots/PRIDE_clock_HKWS.png)
-![PRIDE Clock WUH2](../results/PRIDE_plots/PRIDE_clock_WUH2.png)
-![PRIDE Clock KIRU](../results/PRIDE_plots/PRIDE_clock_KIRU.png)
-![PRIDE Clock ZIM2](../results/PRIDE_plots/PRIDE_clock_ZIM2.png)
+![PRIDE Clock HKWS](../PRIDE_work/PRIDE_plots/PRIDE_clock_HKWS.png)
+![PRIDE Clock WUH2](../PRIDE_work/PRIDE_plots/PRIDE_clock_WUH2.png)
+![PRIDE Clock KIRU](../PRIDE_work/PRIDE_plots/PRIDE_clock_KIRU.png)
+![PRIDE Clock ZIM2](../PRIDE_work/PRIDE_plots/PRIDE_clock_ZIM2.png)
 
 _Receiver clock offsets from all four stations. Smooth, low-noise clock solutions are expected for a well-functioning static run with a stable receiver._
 
 #### ZTD (Zenith Total Delay) — All Stations
 
-![PRIDE ZTD All Stations](../results/PRIDE_plots/PRIDE_ZTD_all_stations.png)
+![PRIDE ZTD All Stations](../PRIDE_work/PRIDE_plots/PRIDE_ZTD_all_stations.png)
 
 _ZTD time series for HKWS, WUH2, KIRU, ZIM2. Expected variation: HKWS highest ZTD (~2.4 m, tropical humidity), KIRU lowest (~2.0 m, cold dry Arctic), ZIM2 and WUH2 intermediate. Smooth diurnal patterns confirm stable troposphere estimation._
 
 #### AR Fix Rate Summary
 
-![PRIDE AR Fix Rates](../results/PRIDE_plots/PRIDE_AR_fix_rates.png)
+![PRIDE AR Fix Rates](../PRIDE_work/PRIDE_plots/PRIDE_AR_fix_rates.png)
 
 _WL and NL fix rates for all four stations. KIRU dominates WL fixing (98.1%) due to long stable arcs at high elevation angles in the southern sky._
 
