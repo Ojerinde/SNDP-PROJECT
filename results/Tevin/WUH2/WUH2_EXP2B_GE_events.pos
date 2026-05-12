@@ -1,0 +1,21 @@
+% program   : RTKLIB ver.EX 2.5.0
+% inp file  : C:\Users\tevin\Desktop\GNSS - MASTA\SPRING SEM\4.SAT NAV DATA PROCESSING\TEAM PROJECT\SNDP-PROJECT\New_Data\obs\RNXDATA\WUH200CHN_R_20260150000_01D_30S_MO.rnx
+% inp file  : C:\Users\tevin\Desktop\GNSS - MASTA\SPRING SEM\4.SAT NAV DATA PROCESSING\TEAM PROJECT\SNDP-PROJECT\Old_data\products\nav\BRDC00IGS_R_20260150000_01D_MN.rnx
+% inp file  : C:\Users\tevin\Desktop\GNSS - MASTA\SPRING SEM\4.SAT NAV DATA PROCESSING\TEAM PROJECT\SNDP-PROJECT\Old_data\products\sp3\COD0MGXFIN_20260150000_01D_05M_ORB.SP3
+% inp file  : C:\Users\tevin\Desktop\GNSS - MASTA\SPRING SEM\4.SAT NAV DATA PROCESSING\TEAM PROJECT\SNDP-PROJECT\Old_data\products\clk\COD0MGXFIN_20260150000_01D_30S_CLK.CLK
+% obs start : 2026/01/15 00:00:00.0 GPST (week2401 345600.0s)
+% obs end   : 2026/01/15 23:59:30.0 GPST (week2401 431970.0s)
+% pos mode  : PPP Static
+% freqs     : L1+L2/E5b
+% solution  : Forward
+% elev mask : 15.0 deg
+% dynamics  : on
+% tidecorr  :
+% ionos opt : Iono-Free LC
+% tropo opt : Saastamoinen
+% ephemeris : Precise
+% navi sys  : GPS Galileo
+% antenna1  : JAVRINGANT_G5T  NONE  ( 0.0000  0.0000  0.1206)
+%
+% (lat/lon/height=WGS84/ellipsoidal,Q=1:fix,2:float,3:sbas,4:dgps,5:single,6:ppp,ns=# of satellites)
+%  GPST                  latitude(deg) longitude(deg)  height(m)   Q  ns   sdn(m)   sde(m)   sdu(m)  sdne(m)  sdeu(m)  sdun(m) age(s)  ratio

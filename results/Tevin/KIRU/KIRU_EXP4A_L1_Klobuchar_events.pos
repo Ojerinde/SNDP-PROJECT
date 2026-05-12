@@ -1,0 +1,19 @@
+% program   : RTKLIB ver.EX 2.5.0
+% inp file  : C:\Users\tevin\Desktop\GNSS - MASTA\SPRING SEM\4.SAT NAV DATA PROCESSING\TEAM PROJECT\SNDP-PROJECT\New_Data\obs\RNXDATA\KIRU00SWE_R_20260150000_01D_30S_MO.rnx
+% inp file  : C:\Users\tevin\Desktop\GNSS - MASTA\SPRING SEM\4.SAT NAV DATA PROCESSING\TEAM PROJECT\SNDP-PROJECT\Old_data\products\nav\BRDC00IGS_R_20260150000_01D_MN.rnx
+% obs start : 2026/01/15 00:00:00.0 GPST (week2401 345600.0s)
+% obs end   : 2026/01/15 23:59:30.0 GPST (week2401 431970.0s)
+% pos mode  : PPP Static
+% freqs     : L1
+% solution  : Forward
+% elev mask : 15.0 deg
+% dynamics  : on
+% tidecorr  :
+% ionos opt : Broadcast
+% tropo opt : Saastamoinen
+% ephemeris : Broadcast
+% navi sys  : GPS
+% antenna1  :                       ( 0.0000  0.0000  0.0620)
+%
+% (lat/lon/height=WGS84/ellipsoidal,Q=1:fix,2:float,3:sbas,4:dgps,5:single,6:ppp,ns=# of satellites)
+%  GPST                  latitude(deg) longitude(deg)  height(m)   Q  ns   sdn(m)   sde(m)   sdu(m)  sdne(m)  sdeu(m)  sdun(m) age(s)  ratio

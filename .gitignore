@@ -1,5 +1,7 @@
 .env
 GAMP_work
+_patch.py
 venv
 RTKLIB_work\Experiment_Detailed_Interpretation.md
 station_reports\PRIDE_PPP_AR_Results.md
+.claude
